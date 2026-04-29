@@ -1,26 +1,20 @@
 @import "tailwindcss";
 
+@theme inline {
+  /* 카카오 옐로우 기준 컬러 팔레트 */
+  --color-kakao-yellow: #fee500;
+  --color-kakao-yellow-hover: #f5dc00;
+  --color-kakao-brown: #3c1e1e;
+  --color-kakao-black: #191600;
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #191600;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
