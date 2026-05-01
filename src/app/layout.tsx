@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "댄스파인더",
+  title: "LOCO 라틴세계에 오신걸 환영합니다",
   description: "댄스 클래스를 찾고 개설하는 플랫폼",
 };
 
