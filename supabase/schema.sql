@@ -59,6 +59,10 @@ CREATE TABLE classes (
   contact          TEXT        NOT NULL DEFAULT '',
   price            INTEGER     NOT NULL DEFAULT 0 CHECK (price >= 0),
   images           JSONB       NOT NULL DEFAULT '[]',
+  type             TEXT        NOT NULL DEFAULT 'class'
+                               CHECK (type IN ('class', 'event')),
+  is_modified      BOOLEAN     NOT NULL DEFAULT FALSE,
+  view_count       INTEGER     NOT NULL DEFAULT 0,
   region           TEXT        NOT NULL DEFAULT '',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -136,7 +140,7 @@ CREATE TABLE notifications (
   message    TEXT        NOT NULL,
   is_read    BOOLEAN     NOT NULL DEFAULT FALSE,
   type       TEXT        NOT NULL
-             CHECK (type IN ('application', 'approved', 'cancelled', 'notice')),
+             CHECK (type IN ('application', 'approved', 'cancelled', 'notice', 'modified')),
   link_url   TEXT,
   related_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -200,3 +204,5 @@ CREATE INDEX idx_applications_class_id     ON applications (class_id);
 CREATE INDEX idx_applications_applicant_id ON applications (applicant_id);
 CREATE INDEX idx_notifications_user_id     ON notifications (user_id);
 CREATE INDEX idx_notifications_is_read     ON notifications (user_id, is_read);
+CREATE INDEX idx_classes_type              ON classes (type);
+CREATE INDEX idx_classes_view_count        ON classes (view_count DESC);
