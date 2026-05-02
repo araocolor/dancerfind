@@ -154,27 +154,47 @@ src/
 │   │   └── onboarding/page.tsx ✅ 완성
 │   ├── (main)/
 │   │   ├── layout.tsx          ✅ Header + BottomNav 연결
-│   │   ├── page.tsx            🔲 TODO: 홈 구현
+│   │   ├── page.tsx            ✅ 홈
+│   │   ├── loading.tsx         ✅
 │   │   ├── search/
-│   │   │   ├── page.tsx        🔲 TODO: 검색 1단계
-│   │   │   └── results/page.tsx 🔲 TODO: 검색 2단계
+│   │   │   ├── layout.tsx      ✅
+│   │   │   ├── page.tsx        ✅ 검색 1단계
+│   │   │   └── results/
+│   │   │       ├── layout.tsx  ✅
+│   │   │       └── page.tsx    ✅ 검색 2단계
 │   │   ├── classes/
-│   │   │   ├── new/page.tsx    🔲 TODO: 개설 폼
-│   │   │   ├── [id]/page.tsx   🔲 TODO: 상세
-│   │   │   └── [id]/edit/page.tsx 🔲 TODO: 수정 폼
-│   │   ├── mypage/page.tsx     🔲 TODO
-│   │   ├── notifications/page.tsx 🔲 TODO
-│   │   └── users/[id]/page.tsx 🔲 TODO
-│   ├── admin/page.tsx          🔲 TODO
+│   │   │   ├── new/page.tsx    ✅ 개설 폼
+│   │   │   └── [id]/
+│   │   │       ├── page.tsx    ✅ 상세
+│   │   │       ├── edit/page.tsx ✅ 수정 폼
+│   │   │       └── loading.tsx ✅
+│   │   ├── mypage/page.tsx     ✅
+│   │   ├── notifications/
+│   │   │   ├── layout.tsx      ✅
+│   │   │   └── page.tsx        ✅
+│   │   └── users/[id]/page.tsx ✅
+│   ├── admin/page.tsx          ✅
+│   ├── api/
+│   │   ├── classes/            ✅
+│   │   ├── applications/       ✅
+│   │   ├── storage/            ✅
+│   │   ├── admin/              ✅
+│   │   └── cron/auto-cancel/   ✅ D-1 자동취소
+│   ├── robots.ts               ✅
+│   ├── sitemap.ts              ✅
 │   ├── auth/callback/route.ts  ✅ (카카오 추후 사용)
 │   ├── globals.css             ✅ 디자인 시스템
 │   └── layout.tsx              ✅
 ├── components/
-│   └── layout/
-│       ├── Header.tsx          🔲 TODO: 아이콘, 로그인 상태 연동
-│       └── BottomNav.tsx       🔲 TODO: 현재 경로 활성화 표시
+│   ├── layout/
+│   │   ├── Header.tsx          ✅
+│   │   └── BottomNav.tsx       ✅
+│   ├── class/                  ✅
+│   ├── user/                   ✅
+│   └── admin/                  ✅
 ├── lib/
 │   ├── constants.ts            ✅
+│   ├── kakao/notify.ts         ✅ (feature flag)
 │   ├── supabase/
 │   │   ├── client.ts           ✅
 │   │   └── server.ts           ✅
@@ -182,7 +202,7 @@ src/
     ├── class.ts                ✅
     ├── user.ts                 ✅
     ├── application.ts          ✅
-    └── notification.ts         🔲 NotificationType에 'modified' 누락 → 추가 필요
+    └── notification.ts         ✅ (modified 포함)
 ```
 
 ---
@@ -209,7 +229,7 @@ src/
 
 ---
 
-## 🔲 Phase 3 — 홈 + 공통 레이아웃
+## ✅ Phase 3 — 홈 + 공통 레이아웃
 
 ### 3-1. Header 완성 (`src/components/layout/Header.tsx`)
 - 로그인 상태에 따라 로그인 버튼 or 프로필 아바타 표시
@@ -237,7 +257,7 @@ card 모드: 이미지 480px (없으면 장르별 기본이미지), + 동일 정
 
 ---
 
-## 🔲 Phase 4 — 검색
+## ✅ Phase 4 — 검색
 
 ### 4-1. 검색 1단계 (`/search`)
 - 지역 select (REGIONS_WITH_ALL)
@@ -274,7 +294,7 @@ query
 
 ---
 
-## 🔲 Phase 5 — 클래스 개설/수정/상세
+## ✅ Phase 5 — 클래스 개설/수정/상세
 
 ### 5-1. 클래스 개설 폼 (`/classes/new`)
 필드 목록:
@@ -343,7 +363,7 @@ is_modified=true → "수정됨" 뱃지
 
 ---
 
-## 🔲 Phase 6 — 마이페이지 + 회원 프로필
+## ✅ Phase 6 — 마이페이지 + 회원 프로필
 
 ### 6-1. 마이페이지 (`/mypage`)
 탭 구성: 프로필 편집 / 내가 개설한 클래스 / 내가 신청한 클래스 / 알림 설정
@@ -376,7 +396,7 @@ is_modified=true → "수정됨" 뱃지
 
 ---
 
-## 🔲 Phase 7 — 알림 시스템
+## ✅ Phase 7 — 알림 시스템
 
 ### 7-1. 알림함 (`/notifications`)
 - 알림 목록 최신순 (읽음/안읽음 구분)
@@ -418,7 +438,7 @@ vercel.json에 cron 설정 추가 필요
 
 ---
 
-## 🔲 Phase 8 — 관리자 페이지 (`/admin`)
+## ✅ Phase 8 — 관리자 페이지 (`/admin`)
 
 접근 조건: role='admin' (middleware에서 처리됨)
 
@@ -433,7 +453,7 @@ vercel.json에 cron 설정 추가 필요
 
 ---
 
-## 🔲 Phase 9 — 마무리 및 배포
+## ✅ Phase 9 — 마무리 및 배포
 
 ### SEO
 - 각 페이지 metadata (title, description)
@@ -470,18 +490,6 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ---
-
-## 미완료 타입 수정사항 (다음 세션 착수 전)
-
-```typescript
-// src/types/notification.ts — 'modified' 추가 필요
-export type NotificationType =
-  | "application"
-  | "approved"
-  | "cancelled"
-  | "notice"
-  | "modified";  // ← 누락됨
-```
 
 ---
 
