@@ -13,6 +13,9 @@ CREATE TABLE profiles (
   email             TEXT,
   name              TEXT,
   nickname          TEXT        NOT NULL DEFAULT '',
+  default_search_options JSONB DEFAULT NULL,
+  preferred_genres  JSONB       NOT NULL DEFAULT '[]',
+  kakao_notification_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   role              TEXT        NOT NULL DEFAULT 'member'
                                 CHECK (role IN ('member', 'pro', 'admin')),
   profile_image_url TEXT,
@@ -43,8 +46,8 @@ CREATE TABLE classes (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   host_id          UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title            TEXT        NOT NULL,
-  genre            TEXT        NOT NULL CHECK (genre IN ('salsa', 'bachata', 'other')),
-  level            TEXT        NOT NULL CHECK (level IN ('beginner', 'intermediate', 'advanced', 'all')),
+  genre            TEXT        NOT NULL CHECK (genre IN ('salsa', 'bachata', 'festival', 'event', 'other')),
+  level            TEXT        NOT NULL CHECK (level IN ('beginner', 'elementary', 'intermediate', 'advanced', 'all')),
   class_type       TEXT        NOT NULL DEFAULT 'group'
                                CHECK (class_type IN ('group', 'private')),
   status           TEXT        NOT NULL DEFAULT 'recruiting'
@@ -206,3 +209,46 @@ CREATE INDEX idx_notifications_user_id     ON notifications (user_id);
 CREATE INDEX idx_notifications_is_read     ON notifications (user_id, is_read);
 CREATE INDEX idx_classes_type              ON classes (type);
 CREATE INDEX idx_classes_view_count        ON classes (view_count DESC);
+
+-- 닉네임 중복 방지 (빈 문자열 제외)
+CREATE UNIQUE INDEX profiles_nickname_unique ON profiles (nickname) WHERE nickname != '';
+
+
+-- ============================================================
+-- 5. pro_requests (프로 등급 신청)
+-- ============================================================
+CREATE TABLE pro_requests (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  status     TEXT        NOT NULL DEFAULT 'pending'
+             CHECK (status IN ('pending', 'approved', 'rejected')),
+  message    TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 동시에 여러 pending 요청 방지
+CREATE UNIQUE INDEX pro_requests_unique_pending ON pro_requests (user_id) WHERE status = 'pending';
+
+ALTER TABLE pro_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "pro_requests: 본인 및 관리자만 조회"
+  ON pro_requests FOR SELECT USING (
+    auth.uid() = user_id
+    OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "pro_requests: 본인만 신청"
+  ON pro_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "pro_requests: 관리자만 상태 변경"
+  ON pro_requests FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE TRIGGER pro_requests_updated_at
+  BEFORE UPDATE ON pro_requests
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE INDEX idx_pro_requests_user_id ON pro_requests (user_id);
+CREATE INDEX idx_pro_requests_status  ON pro_requests (status);

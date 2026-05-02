@@ -1,5 +1,23 @@
 export type UserRole = "member" | "pro" | "admin";
 
+export interface SearchOptions {
+  region?: string;
+  status?: string;
+  class_type?: string;
+  genre?: string;
+}
+
+export type ProRequestStatus = "pending" | "approved" | "rejected";
+
+export interface ProRequest {
+  id: string;
+  user_id: string;
+  status: ProRequestStatus;
+  message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -11,5 +29,7 @@ export interface User {
   kakao_id: string | null;
   bio: string | null;
   region: string | null;
+  default_search_options: SearchOptions | null;
+  kakao_notification_enabled: boolean;
   created_at: string;
 }

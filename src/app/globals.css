@@ -1,20 +1,149 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* 카카오 옐로우 기준 컬러 팔레트 */
+  /* Brand */
   --color-kakao-yellow: #fee500;
   --color-kakao-yellow-hover: #f5dc00;
-  --color-kakao-brown: #3c1e1e;
   --color-kakao-black: #191600;
+
+  /* Surface */
+  --color-bg: #f6f8fb;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+
+  /* Text */
+  --color-text-primary: #111111;
+  --color-text-secondary: #666666;
+  --color-text-muted: #999999;
+
+  /* Semantic */
+  --color-success: #10b981;
+  --color-error: #ef4444;
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #191600;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --radius-card: 16px;
+  --radius-input: 12px;
+  --radius-pill: 9999px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  background: #f6f8fb;
+  color: #111111;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+    "Malgun Gothic", Pretendard, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 카드 ── */
+.card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── 버튼 (알약형 기본) ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 24px;
+  background: #fee500;
+  color: #191600;
+  font-weight: 700;
+  font-size: 15px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover {
+  background: #f5dc00;
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: transparent;
+  color: #111111;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.btn-outline:hover {
+  border-color: #111111;
+}
+
+/* ── 칩 (장르/필터 선택) ── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  color: #666666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chip.active {
+  background: #fee500;
+  border-color: #fee500;
+  color: #191600;
+  font-weight: 700;
+}
+
+/* ── 인풋 필드 ── */
+.input-field {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: var(--radius-input);
+  font-size: 14px;
+  color: #111111;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.input-field::placeholder {
+  color: #999999;
+}
+.input-field:focus {
+  border-color: #fee500;
+}
+
+/* ── 공통 레이블 ── */
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 6px;
+}
+
+/* ── 에러 텍스트 ── */
+.error-text {
+  font-size: 12px;
+  color: #ef4444;
+  margin-top: 4px;
 }

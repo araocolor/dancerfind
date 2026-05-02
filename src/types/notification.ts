@@ -1,4 +1,4 @@
-export type NotificationType = "application" | "approved" | "cancelled" | "notice";
+export type NotificationType = "application" | "approved" | "cancelled" | "notice" | "modified";
 
 export interface Notification {
   id: string;

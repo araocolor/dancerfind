@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { class_id } = await request.json();
+
+  // 중복 신청 확인
+  const { data: existing } = await supabase
+    .from("applications")
+    .select("id, status")
+    .eq("class_id", class_id)
+    .eq("applicant_id", user.id)
+    .neq("status", "cancelled")
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ error: "이미 신청한 클래스입니다." }, { status: 409 });
+  }
+
+  const { data, error } = await supabase
+    .from("applications")
+    .insert({ class_id, applicant_id: user.id, status: "pending" })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // 개설자에게 신청 알림
+  const { data: cls } = await supabase
+    .from("classes")
+    .select("host_id, title")
+    .eq("id", class_id)
+    .single();
+
+  if (cls) {
+    const { data: applicantProfile } = await supabase
+      .from("profiles")
+      .select("nickname")
+      .eq("id", user.id)
+      .single();
+
+    await supabase.from("notifications").insert({
+      user_id: cls.host_id,
+      type: "application",
+      message: `${applicantProfile?.nickname ?? "누군가"}님이 "${cls.title}" 클래스에 신청했습니다.`,
+      link_url: `/classes/${class_id}`,
+      related_id: data.id,
+    });
+  }
+
+  return NextResponse.json(data, { status: 201 });
+}

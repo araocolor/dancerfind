@@ -19,6 +19,10 @@ Ask one short clarification question if the missing information would change the
 
 ---
 
+## 참조문서 
+
+사용자와  좋은 대화를 위해서는 용어정리.md 를 참조할것 
+
 ## Main Prioritiesㅎ 주요 우선순위
 
 Follow these priorities in order:
@@ -345,3 +349,4 @@ Do not read or analyze these files or folders unless the user explicitly asks:
 - mynote.md
 - /my/
 - AGENTS.md
+- /codex_log 
