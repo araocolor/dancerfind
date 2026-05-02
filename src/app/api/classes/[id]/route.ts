@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendKakaoAlimtalk } from "@/lib/kakao/notify";
 
 export async function PATCH(
   request: NextRequest,
@@ -46,15 +47,25 @@ export async function PATCH(
     .eq("status", "approved");
 
   if (approved && approved.length > 0) {
+    const message = `신청한 클래스 "${data.title}"의 내용이 수정되었습니다.`;
+    const linkUrl = `/classes/${id}`;
+
     await supabase.from("notifications").insert(
       approved.map((a) => ({
         user_id: a.applicant_id,
         type: "modified",
-        message: `신청한 클래스 "${data.title}"의 내용이 수정되었습니다.`,
-        link_url: `/classes/${id}`,
+        message,
+        link_url: linkUrl,
         related_id: id,
       }))
     );
+
+    await sendKakaoAlimtalk({
+      event: "modified",
+      recipients: approved.map((a) => a.applicant_id),
+      message,
+      linkUrl,
+    });
   }
 
   return NextResponse.json(data);
@@ -106,15 +117,25 @@ export async function DELETE(
   // 승인된 신청자에게 취소 알림
   const approved = applications.filter((a) => a.status === "approved");
   if (approved.length > 0) {
+    const message = `신청한 클래스 "${cls.title}"이 취소되었습니다.`;
+    const linkUrl = `/classes/${id}`;
+
     await supabase.from("notifications").insert(
       approved.map((a) => ({
         user_id: a.applicant_id,
         type: "cancelled",
-        message: `신청한 클래스 "${cls.title}"이 취소되었습니다.`,
-        link_url: `/classes/${id}`,
+        message,
+        link_url: linkUrl,
         related_id: id,
       }))
     );
+
+    await sendKakaoAlimtalk({
+      event: "cancelled",
+      recipients: approved.map((a) => a.applicant_id),
+      message,
+      linkUrl,
+    });
   }
 
   return NextResponse.json({ cancelled: true });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendKakaoAlimtalk } from "@/lib/kakao/notify";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -50,12 +51,22 @@ export async function POST(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
+    const message = `${applicantProfile?.nickname ?? "누군가"}님이 "${cls.title}" 클래스에 신청했습니다.`;
+    const linkUrl = `/classes/${class_id}`;
+
     await supabase.from("notifications").insert({
       user_id: cls.host_id,
       type: "application",
-      message: `${applicantProfile?.nickname ?? "누군가"}님이 "${cls.title}" 클래스에 신청했습니다.`,
-      link_url: `/classes/${class_id}`,
+      message,
+      link_url: linkUrl,
       related_id: data.id,
+    });
+
+    await sendKakaoAlimtalk({
+      event: "application",
+      recipients: [cls.host_id],
+      message,
+      linkUrl,
     });
   }
 

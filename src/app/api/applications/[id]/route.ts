@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendKakaoAlimtalk } from "@/lib/kakao/notify";
 
 // 승인 (host only)
 export async function PATCH(
@@ -49,12 +50,22 @@ export async function PATCH(
   }
 
   // 신청자에게 승인 알림
+  const message = `"${cls.title}" 클래스 신청이 승인되었습니다.`;
+  const linkUrl = `/classes/${application.class_id}`;
+
   await supabase.from("notifications").insert({
     user_id: application.applicant_id,
     type: "approved",
-    message: `"${cls.title}" 클래스 신청이 승인되었습니다.`,
-    link_url: `/classes/${application.class_id}`,
+    message,
+    link_url: linkUrl,
     related_id: application.class_id,
+  });
+
+  await sendKakaoAlimtalk({
+    event: "approved",
+    recipients: [application.applicant_id],
+    message,
+    linkUrl,
   });
 
   return NextResponse.json(data);
