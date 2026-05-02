@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface Applicant {
   id: string;
@@ -65,10 +66,12 @@ export default function ApplicantList({ classId, initialApplicants }: ApplicantL
       {visible.map((a) => (
         <div key={a.id} className="flex items-center gap-3">
           {a.applicant.profile_image_url ? (
-            <img
+            <Image
               src={a.applicant.profile_image_url}
               alt={a.applicant.nickname}
-              className="w-9 h-9 rounded-full object-cover"
+              width={36}
+              height={36}
+              className="rounded-full object-cover"
             />
           ) : (
             <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-500">

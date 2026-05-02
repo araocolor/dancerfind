@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AdminPageClient from "@/components/admin/AdminPageClient";
+
+export const metadata: Metadata = { title: "관리자" };
 import type { UserRole } from "@/types/user";
 import type { ClassStatus, ContentType } from "@/types/class";
 import type { ProRequestStatus } from "@/types/user";
@@ -85,7 +88,7 @@ export default async function AdminPage() {
   }));
 
   const proRequests: ProRequestItem[] = (proRequestResult.data ?? []).map((item) => {
-    const requestUser = item.user as ProRequestItem["user"];
+    const requestUser = item.user as unknown as ProRequestItem["user"];
     return {
       id: item.id,
       user_id: item.user_id,
@@ -103,7 +106,7 @@ export default async function AdminPage() {
   });
 
   const classes: AdminClassItem[] = (classesResult.data ?? []).map((item) => {
-    const classHost = item.host as AdminClassItem["host"];
+    const classHost = item.host as unknown as AdminClassItem["host"];
 
     return {
       id: item.id,

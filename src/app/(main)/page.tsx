@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import ClassCard, { ClassWithHost } from "@/components/class/ClassCard";
 import Link from "next/link";
+
+export const metadata: Metadata = { title: "홈" };
 
 export default async function HomePage() {
   const supabase = await createClient();

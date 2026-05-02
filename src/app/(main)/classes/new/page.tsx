@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ClassForm from "@/components/class/ClassForm";
+
+export const metadata: Metadata = { title: "클래스 개설" };
 
 export default async function ClassNewPage() {
   const supabase = await createClient();

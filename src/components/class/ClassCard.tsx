@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { DanceClass, DANCE_GENRE_LABELS, CLASS_LEVEL_LABELS } from "@/types/class";
 
 interface ClassHost {
@@ -95,10 +96,12 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
           {host && (
             <div className="flex items-center gap-1.5 mt-2">
               {host.profile_image_url ? (
-                <img
+                <Image
                   src={host.profile_image_url}
                   alt={host.nickname}
-                  className="w-5 h-5 rounded-full object-cover"
+                  width={20}
+                  height={20}
+                  className="rounded-full object-cover"
                 />
               ) : (
                 <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-[10px] font-medium">
@@ -118,10 +121,12 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
     <Link href={`/classes/${id}`} className="card flex items-start gap-3 p-3">
       <div className="flex-shrink-0 mt-0.5">
         {host?.profile_image_url ? (
-          <img
+          <Image
             src={host.profile_image_url}
             alt={host.nickname}
-            className="w-10 h-10 rounded-full object-cover"
+            width={40}
+            height={40}
+            className="rounded-full object-cover"
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-sm font-medium">

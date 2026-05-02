@@ -1,10 +1,39 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import { DANCE_GENRE_LABELS, CLASS_LEVEL_LABELS } from "@/types/class";
 import ApplyButton from "@/components/class/ApplyButton";
 import ApplicantList from "@/components/class/ApplicantList";
 import CancelClassButton from "@/components/class/CancelClassButton";
+
+type Props = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: cls } = await supabase
+    .from("classes")
+    .select("title, description, images")
+    .eq("id", id)
+    .single();
+
+  if (!cls) return { title: "클래스를 찾을 수 없습니다" };
+
+  const images = (cls.images as { card_url?: string; full_url?: string }[]) ?? [];
+  const ogImage = images[0]?.card_url ?? images[0]?.full_url;
+
+  return {
+    title: cls.title,
+    description: cls.description?.slice(0, 160) ?? undefined,
+    openGraph: {
+      title: cls.title,
+      description: cls.description?.slice(0, 160) ?? undefined,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+  };
+}
 
 const GENRE_CHIP: Record<string, string> = {
   salsa: "bg-red-50 text-red-600",
@@ -111,10 +140,13 @@ export default async function ClassDetailPage({
         <div className="flex overflow-x-auto snap-x snap-mandatory">
           {images.map((img, i) => (
             <div key={i} className="flex-shrink-0 w-full snap-start">
-              <img
+              <Image
                 src={img.full_url ?? img.card_url ?? ""}
                 alt={`클래스 이미지 ${i + 1}`}
-                className="w-full h-auto max-h-[70vh] object-contain bg-black/5"
+                width={1200}
+                height={900}
+                style={{ width: "100%", height: "auto", maxHeight: "70vh", objectFit: "contain" }}
+                className="bg-black/5"
               />
             </div>
           ))}
@@ -160,10 +192,12 @@ export default async function ClassDetailPage({
             className="flex items-center gap-2 mb-4"
           >
             {host.profile_image_url ? (
-              <img
+              <Image
                 src={host.profile_image_url}
                 alt={host.nickname}
-                className="w-9 h-9 rounded-full object-cover"
+                width={36}
+                height={36}
+                className="rounded-full object-cover"
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-500">

@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LOCO 라틴세계에 오신걸 환영합니다",
-  description: "댄스 클래스를 찾고 개설하는 플랫폼",
+  title: {
+    default: "LOCO — 라틴댄스 클래스",
+    template: "%s | LOCO",
+  },
+  description: "살사·바차타 댄스 클래스를 찾고 개설하는 플랫폼",
 };
 
 export default function RootLayout({

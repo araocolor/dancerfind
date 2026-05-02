@@ -1,7 +1,22 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ClassCard, { ClassWithHost } from "@/components/class/ClassCard";
+
+type Props = { params: Promise<{ id: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("nickname")
+    .eq("id", id)
+    .single();
+  return { title: data?.nickname ? `${data.nickname} 프로필` : "회원 프로필" };
+}
 
 interface ProfileRow {
   id: string;
@@ -50,10 +65,12 @@ export default async function UserProfilePage({
       <section className="card p-4">
         <div className="flex items-start gap-3">
           {hostProfile.profile_image_url ? (
-            <img
+            <Image
               src={hostProfile.profile_image_url}
               alt={nickname}
-              className="w-14 h-14 rounded-full object-cover"
+              width={56}
+              height={56}
+              className="rounded-full object-cover"
             />
           ) : (
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-semibold text-lg">

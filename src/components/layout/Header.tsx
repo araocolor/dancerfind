@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import BackButton from "@/components/layout/BackButton";
 import { createClient } from "@/lib/supabase/server";
 
@@ -82,10 +83,12 @@ export default async function Header() {
         {user ? (
           <Link href="/mypage" aria-label="마이페이지">
             {profileImageUrl ? (
-              <img
+              <Image
                 src={profileImageUrl}
                 alt="프로필"
-                className="w-8 h-8 rounded-full object-cover border border-gray-100"
+                width={32}
+                height={32}
+                className="rounded-full object-cover border border-gray-100"
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">

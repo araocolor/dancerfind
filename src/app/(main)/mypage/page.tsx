@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import MyPageClient from "@/components/user/MyPageClient";
+
+export const metadata: Metadata = { title: "마이페이지" };
 import type { ClassStatus } from "@/types/class";
 import type { ApplicationStatus } from "@/types/application";
 import type { UserRole } from "@/types/user";
@@ -75,7 +78,7 @@ export default async function MyPage() {
   }));
 
   const initialAppliedClasses: AppliedClassRow[] = (appliedResult.data ?? []).map((row) => {
-    const cls = row.class as AppliedClassInfo | null;
+    const cls = row.class as unknown as AppliedClassInfo | null;
 
     return {
       id: row.id,

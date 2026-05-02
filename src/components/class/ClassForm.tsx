@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { GENRES, LEVELS, CLASS_TYPES, REGIONS } from "@/lib/constants";
@@ -469,10 +470,12 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
           <div className="flex gap-2 mb-3 flex-wrap">
             {existingImages.map((img, i) => (
               <div key={`e-${i}`} className="relative">
-                <img
+                <Image
                   src={img.card_url}
                   alt=""
-                  className="w-20 h-20 object-cover rounded-[10px]"
+                  width={80}
+                  height={80}
+                  className="object-cover rounded-[10px]"
                 />
                 <button
                   type="button"
