@@ -33,7 +33,12 @@ CREATE POLICY "profiles: 전체 조회 허용"
   ON profiles FOR SELECT USING (true);
 
 CREATE POLICY "profiles: 본인만 수정"
-  ON profiles FOR UPDATE USING (auth.uid() = id);
+  ON profiles FOR UPDATE USING (
+    auth.uid() = id
+    OR EXISTS (
+      SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin'
+    )
+  );
 
 CREATE POLICY "profiles: 본인만 삽입"
   ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
@@ -179,17 +184,35 @@ CREATE TRIGGER applications_updated_at
 
 
 -- ============================================================
--- 카카오 로그인 후 profiles 자동 생성 트리거
+-- 신규 회원 생성 시 profiles 자동 생성 트리거
 -- ============================================================
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  nickname_candidate TEXT;
 BEGIN
-  INSERT INTO profiles (id, email)
-  VALUES (NEW.id, NEW.email)
-  ON CONFLICT (id) DO NOTHING;
+  nickname_candidate := COALESCE(trim(NEW.raw_user_meta_data->>'nickname'), '');
+
+  IF nickname_candidate != '' AND EXISTS (
+    SELECT 1 FROM public.profiles WHERE nickname = nickname_candidate
+  ) THEN
+    nickname_candidate := '';
+  END IF;
+
+  BEGIN
+    INSERT INTO public.profiles (id, email, nickname)
+    VALUES (NEW.id, NEW.email, nickname_candidate)
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION
+    WHEN unique_violation THEN
+      INSERT INTO public.profiles (id, email, nickname)
+      VALUES (NEW.id, NEW.email, '')
+      ON CONFLICT (id) DO NOTHING;
+  END;
+
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

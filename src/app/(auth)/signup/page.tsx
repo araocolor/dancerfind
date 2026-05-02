@@ -10,7 +10,6 @@ const DEFAULT_PW = "loco1234";
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [nickname, setNickname] = useState("");
-  const [password, setPassword] = useState("");
   const [nicknameStatus, setNicknameStatus] = useState<
     "idle" | "checking" | "ok" | "taken"
   >("idle");
@@ -19,7 +18,8 @@ export default function SignupPage() {
   const router = useRouter();
 
   async function checkNickname(nick: string) {
-    if (!nick || nick.length < 2) {
+    const normalizedNickname = nick.trim();
+    if (!normalizedNickname || normalizedNickname.length < 2) {
       setNicknameStatus("idle");
       return;
     }
@@ -28,18 +28,24 @@ export default function SignupPage() {
     const { data } = await supabase
       .from("profiles")
       .select("id")
-      .eq("nickname", nick)
+      .eq("nickname", normalizedNickname)
       .maybeSingle();
     setNicknameStatus(data ? "taken" : "ok");
   }
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedNickname = nickname.trim();
+
     if (nicknameStatus === "taken") {
       setError("이미 사용 중인 닉네임입니다.");
       return;
     }
-    if (nickname.length < 2) {
+    if (nicknameStatus === "checking") {
+      setError("닉네임 확인 중입니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+    if (trimmedNickname.length < 2) {
       setError("닉네임은 2자 이상이어야 합니다.");
       return;
     }
@@ -48,22 +54,58 @@ export default function SignupPage() {
     setError("");
     const supabase = createClient();
 
+    const { data: nicknameOwner, error: nicknameCheckError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("nickname", trimmedNickname)
+      .maybeSingle();
+
+    if (nicknameCheckError) {
+      setError("닉네임 확인 중 오류가 발생했습니다. 다시 시도해주세요.");
+      setLoading(false);
+      return;
+    }
+
+    if (nicknameOwner) {
+      setNicknameStatus("taken");
+      setError("이미 사용 중인 닉네임입니다.");
+      setLoading(false);
+      return;
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
-      password: password || DEFAULT_PW,
+      password: DEFAULT_PW,
+      options: {
+        data: {
+          nickname: trimmedNickname,
+        },
+      },
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      if (signUpError.message.includes("Database error saving new user")) {
+        setError(
+          "회원가입 처리 중 오류가 발생했습니다. 닉네임/이메일을 다시 확인하고 재시도해주세요."
+        );
+      } else {
+        setError(signUpError.message);
+      }
       setLoading(false);
       return;
     }
 
     if (data.user) {
-      await supabase
+      const { error: profileUpdateError } = await supabase
         .from("profiles")
-        .update({ nickname })
+        .update({ nickname: trimmedNickname })
         .eq("id", data.user.id);
+
+      if (profileUpdateError) {
+        setError("가입은 완료되었지만 프로필 저장에 실패했습니다. 다시 로그인해주세요.");
+        setLoading(false);
+        return;
+      }
 
       router.push("/onboarding");
     } else {
@@ -122,17 +164,6 @@ export default function SignupPage() {
             {nicknameStatus === "taken" && (
               <p className="error-text">이미 사용 중인 닉네임입니다</p>
             )}
-          </div>
-
-          <div>
-            <label className="field-label">비밀번호</label>
-            <input
-              type="password"
-              className="input-field"
-              placeholder="비워두면 loco1234 자동 적용"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
           </div>
 
           {error && <p className="error-text">{error}</p>}
