@@ -152,8 +152,22 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   }
 
   async function uploadImages(files: File[], userId: string): Promise<ClassImage[]> {
-    const supabase = createClient();
     const result: ClassImage[] = [];
+    const failed: string[] = [];
+    const uploadViaApi = async (file: File, path: string) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("path", path);
+      const res = await fetch("/api/storage/class-images", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "이미지 업로드 중 오류가 발생했습니다.");
+      }
+      return data.publicUrl as string;
+    };
 
     for (const file of files) {
       const base = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -163,22 +177,23 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
           imageCompression(file, { maxWidthOrHeight: 480, useWebWorker: true }),
           imageCompression(file, { maxWidthOrHeight: 1034, useWebWorker: true }),
         ]);
-        const uploads = await Promise.all([
-          supabase.storage.from("class-images").upload(`${base}-icon.jpg`, icon, { contentType: "image/jpeg" }),
-          supabase.storage.from("class-images").upload(`${base}-card.jpg`, card, { contentType: "image/jpeg" }),
-          supabase.storage.from("class-images").upload(`${base}-full.jpg`, full, { contentType: "image/jpeg" }),
+        const [iconUrl, cardUrl, fullUrl] = await Promise.all([
+          uploadViaApi(icon as File, `${base}-icon.jpg`),
+          uploadViaApi(card as File, `${base}-card.jpg`),
+          uploadViaApi(full as File, `${base}-full.jpg`),
         ]);
-        if (uploads.some((u) => u.error)) continue;
-        const url = (path: string) =>
-          supabase.storage.from("class-images").getPublicUrl(path).data.publicUrl;
         result.push({
-          icon_url: url(`${base}-icon.jpg`),
-          card_url: url(`${base}-card.jpg`),
-          full_url: url(`${base}-full.jpg`),
+          icon_url: iconUrl,
+          card_url: cardUrl,
+          full_url: fullUrl,
         });
-      } catch {
-        // 개별 이미지 실패 시 skip
+      } catch (error) {
+        failed.push(error instanceof Error ? error.message : "이미지 업로드 중 오류가 발생했습니다.");
       }
+    }
+
+    if (failed.length > 0) {
+      throw new Error(`이미지 업로드 실패: ${failed[0]}`);
     }
 
     return result;

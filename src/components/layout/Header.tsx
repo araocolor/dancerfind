@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BackButton from "@/components/layout/BackButton";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function Header() {
@@ -28,8 +29,14 @@ export default async function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] h-14 flex items-center px-4">
-      <Link href="/" className="font-bold text-xl text-[#FEE500]">
+    <header className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] h-14 px-4 relative flex items-center">
+      <div className="w-10 flex items-center justify-start">
+        <BackButton />
+      </div>
+      <Link
+        href="/"
+        className="absolute left-1/2 -translate-x-1/2 font-bold text-xl text-[#FEE500] leading-none"
+      >
         LOCO
       </Link>
       <div className="ml-auto flex items-center gap-4">

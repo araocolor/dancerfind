@@ -2,6 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendKakaoAlimtalk } from "@/lib/kakao/notify";
 
+const ALLOWED_LEVELS = ["beginner", "elementary", "intermediate", "advanced", "all"] as const;
+const LEVEL_ALIASES: Record<string, (typeof ALLOWED_LEVELS)[number]> = {
+  beginner: "beginner",
+  "입문": "beginner",
+  elementary: "elementary",
+  "초급": "elementary",
+  intermediate: "intermediate",
+  "중급": "intermediate",
+  advanced: "advanced",
+  "고급": "advanced",
+  all: "all",
+  "올레벨": "all",
+};
+
+function normalizeLevel(value: unknown): (typeof ALLOWED_LEVELS)[number] | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return LEVEL_ALIASES[value.trim()] ?? LEVEL_ALIASES[normalized] ?? null;
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,15 +47,33 @@ export async function PATCH(
   }
 
   const body = await request.json();
+  const updatePayload = { ...body } as Record<string, unknown>;
+
+  if ("level" in updatePayload) {
+    const level = normalizeLevel(updatePayload.level);
+    if (!level) {
+      return NextResponse.json(
+        { error: "레벨 값이 올바르지 않습니다. (입문/초급/중급/고급/올레벨)" },
+        { status: 400 }
+      );
+    }
+    updatePayload.level = level;
+  }
 
   const { data, error } = await supabase
     .from("classes")
-    .update({ ...body, is_modified: true })
+    .update({ ...updatePayload, is_modified: true })
     .eq("id", id)
     .select()
     .single();
 
   if (error) {
+    if (error.message.includes("classes_level_check")) {
+      return NextResponse.json(
+        { error: "레벨 값이 올바르지 않습니다. (입문/초급/중급/고급/올레벨)" },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

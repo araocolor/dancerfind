@@ -99,7 +99,7 @@ export default async function ClassDetailPage({
     profile_image_url: string | null;
   } | null;
 
-  const images: { card_url: string }[] = cls.images ?? [];
+  const images: { card_url?: string; full_url?: string }[] = cls.images ?? [];
   const genreLabel = DANCE_GENRE_LABELS[cls.genre as keyof typeof DANCE_GENRE_LABELS] ?? cls.genre;
   const levelLabel = CLASS_LEVEL_LABELS[cls.level as keyof typeof CLASS_LEVEL_LABELS] ?? cls.level;
   const chipCls = GENRE_CHIP[cls.genre] ?? GENRE_CHIP.other;
@@ -112,9 +112,9 @@ export default async function ClassDetailPage({
           {images.map((img, i) => (
             <div key={i} className="flex-shrink-0 w-full snap-start">
               <img
-                src={img.card_url}
+                src={img.full_url ?? img.card_url ?? ""}
                 alt={`클래스 이미지 ${i + 1}`}
-                className="w-full h-[240px] object-cover"
+                className="w-full h-auto max-h-[70vh] object-contain bg-black/5"
               />
             </div>
           ))}
