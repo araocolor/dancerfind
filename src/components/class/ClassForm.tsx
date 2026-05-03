@@ -173,10 +173,11 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     for (const file of files) {
       const base = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
       try {
+        const compressionBase = { useWebWorker: true, fileType: "image/jpeg", initialQuality: 0.7 };
         const [icon, card, full] = await Promise.all([
-          imageCompression(file, { maxWidthOrHeight: 200, useWebWorker: true }),
-          imageCompression(file, { maxWidthOrHeight: 480, useWebWorker: true }),
-          imageCompression(file, { maxWidthOrHeight: 1034, useWebWorker: true }),
+          imageCompression(file, { ...compressionBase, maxWidth: 200 }),
+          imageCompression(file, { ...compressionBase, maxWidth: 480 }),
+          imageCompression(file, { ...compressionBase, maxWidth: 1024 }),
         ]);
         const [iconUrl, cardUrl, fullUrl] = await Promise.all([
           uploadViaApi(icon as File, `${base}-icon.jpg`),

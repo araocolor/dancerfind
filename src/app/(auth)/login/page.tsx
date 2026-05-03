@@ -18,6 +18,7 @@ function KakaoLoginButton() {
       provider: "kakao",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${next}`,
+        scopes: "profile_nickname profile_image",
       },
     });
     if (authError) {

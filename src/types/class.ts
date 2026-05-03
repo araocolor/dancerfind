@@ -23,7 +23,7 @@ export const CLASS_LEVEL_LABELS: Record<ClassLevel, string> = {
 export interface ClassImage {
   icon_url: string;  // 너비 200px
   card_url: string;  // 너비 480px
-  full_url: string;  // 너비 1034px
+  full_url: string;  // 너비 1024px
 }
 
 export interface DanceClass {
