@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { REGIONS_WITH_ALL, GENRES } from "@/lib/constants";
-import SearchHeader from "@/components/layout/SearchHeader";
 import {
   DEFAULT_SEARCH_OPTIONS,
   SEARCH_DEFAULTS_STORAGE_KEY,
@@ -23,38 +22,46 @@ const CLASS_TYPE_OPTIONS = [
   { value: "private", label: "1:1" },
 ];
 
-const STATUS_LABELS: Record<string, string> = { 전체: "전체", recruiting: "모집중", closed: "마감" };
-const CLASS_TYPE_LABELS: Record<string, string> = { 전체: "전체", group: "그룹", private: "1:1" };
 
-export default function SearchPage() {
+export default function SearchSheet() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isOpen = searchParams.get("search") === "open";
+
   const [opts, setOpts] = useState<SearchOptions>(DEFAULT_SEARCH_OPTIONS);
   const [saveDefault, setSaveDefault] = useState(false);
-  const [loading, setLoading] = useState(true);
-
   useEffect(() => {
-    async function loadDefaults() {
-      const raw = sessionStorage.getItem(SEARCH_DEFAULTS_STORAGE_KEY);
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw) as SearchOptions | (Omit<SearchOptions, "genre"> & { genre: string });
-          const saved = {
-            ...parsed,
-            genre: Array.isArray(parsed.genre)
-              ? parsed.genre
-              : parsed.genre && parsed.genre !== "전체"
-              ? [parsed.genre]
-              : [],
-          };
-          const qs = buildSearchQuery(saved);
-          router.replace(`/search/results${qs ? `?${qs}` : ""}`);
-          return;
-        } catch {}
-      }
-      setLoading(false);
+    if (!isOpen) return;
+
+    const raw = sessionStorage.getItem(SEARCH_DEFAULTS_STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as SearchOptions | (Omit<SearchOptions, "genre"> & { genre: string });
+        setOpts({
+          ...parsed,
+          genre: Array.isArray(parsed.genre)
+            ? parsed.genre
+            : parsed.genre && parsed.genre !== "전체"
+            ? [parsed.genre]
+            : [],
+        });
+      } catch {}
     }
-    loadDefaults();
-  }, [router]);
+  }, [isOpen]);
+
+  function close() {
+    router.back();
+  }
+
+  async function handleResetSearch() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({ default_search_options: null }).eq("id", user.id);
+    }
+    sessionStorage.removeItem(SEARCH_DEFAULTS_STORAGE_KEY);
+    setOpts(DEFAULT_SEARCH_OPTIONS);
+  }
 
   async function handleSearch() {
     sessionStorage.setItem(SEARCH_DEFAULTS_STORAGE_KEY, JSON.stringify(opts));
@@ -68,7 +75,7 @@ export default function SearchPage() {
     }
 
     const qs = buildSearchQuery(opts);
-    router.push(`/search/results${qs ? `?${qs}` : ""}`);
+    router.push(`/?${qs}`);
   }
 
   function set(key: "region" | "status" | "class_type", value: string) {
@@ -84,21 +91,20 @@ export default function SearchPage() {
     });
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-40 text-gray-400 text-sm">로딩 중...</div>;
-  }
+  if (!isOpen) return null;
 
   return (
     <>
-      <SearchHeader />
-      <div className="relative z-50 px-4 py-6 max-w-xl mx-auto">
+      <button
+        type="button"
+        aria-label="검색창 닫기"
+        onClick={close}
+        className="fixed inset-0 z-[9998]"
+      />
+      <div className="search-slide-in search-half-panel px-4 py-6 pb-36">
         <h1 className="text-lg font-bold mb-6">클래스 검색</h1>
-        <p className="text-xs text-gray-500 mb-4">
-          현재 검색 조건: {opts.region} / {CLASS_TYPE_LABELS[opts.class_type] ?? opts.class_type} /{" "}
-          {STATUS_LABELS[opts.status] ?? opts.status} /{" "}
-          {opts.genre.length > 0 ? opts.genre.map((v) => GENRES.find((g) => g.value === v)?.label ?? v).join(", ") : "전체"}
-        </p>
 
+        {/* 지역 / 클래스구분 / 모집상태 */}
         <div className="mb-5 grid grid-cols-3 gap-2 items-end text-center">
           <div>
             <label className="field-label">지역</label>
@@ -126,7 +132,8 @@ export default function SearchPage() {
           </div>
         </div>
 
-        <div className="mb-6">
+        {/* 장르 */}
+        <div className="mb-5">
           <label className="field-label">장르</label>
           <div className="flex gap-2 flex-wrap">
             <button
@@ -137,14 +144,31 @@ export default function SearchPage() {
               전체
             </button>
             {GENRES.map((g) => (
-              <button key={g.value} type="button" onClick={() => toggleGenre(g.value)} className={`chip ${opts.genre.includes(g.value) ? "active" : ""}`}>
+              <button
+                key={g.value}
+                type="button"
+                onClick={() => toggleGenre(g.value)}
+                className={`chip ${opts.genre.includes(g.value) ? "active" : ""}`}
+              >
                 {g.label}
               </button>
             ))}
           </div>
         </div>
 
-        <label className="flex items-center gap-2 mb-6 cursor-pointer select-none">
+        {/* 검색초기화 */}
+        <div className="flex items-center mb-5">
+          <button
+            type="button"
+            onClick={handleResetSearch}
+            className="text-xs text-gray-400 underline"
+          >
+            검색초기화
+          </button>
+        </div>
+
+        {/* 기본으로 저장 */}
+        <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={saveDefault}
@@ -153,10 +177,27 @@ export default function SearchPage() {
           />
           <span className="text-sm text-gray-600">이 조건을 기본으로 저장</span>
         </label>
+      </div>
 
-        <button type="button" className="btn-primary" onClick={handleSearch}>
-          검색하기
-        </button>
+      {/* 하단 고정 영역 */}
+      <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-white border-t border-[#e5e7eb] px-4 pt-3 pb-4">
+        {/* 닫기 + 검색하기 */}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={close}
+            className="flex-1 h-12 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm"
+          >
+            닫기
+          </button>
+          <button
+            type="button"
+            onClick={handleSearch}
+            className="flex-1 h-12 rounded-xl bg-[#FEE500] text-gray-900 font-semibold text-sm"
+          >
+            검색하기
+          </button>
+        </div>
       </div>
     </>
   );

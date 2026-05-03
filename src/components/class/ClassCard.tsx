@@ -62,57 +62,70 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
 
   if (viewMode === "card") {
     return (
-      <Link href={`/classes/${id}`} className="card block overflow-hidden">
-        <div
-          className="w-full h-[200px] flex items-center justify-center bg-cover bg-center"
-          style={
-            imageUrl
-              ? { backgroundImage: `url(${imageUrl})` }
-              : { backgroundColor: GENRE_BG[genre] ?? GENRE_BG.other }
-          }
-        >
-          {!imageUrl && (
-            <span className="text-5xl opacity-30">
-              {genre === "salsa" ? "💃" : genre === "bachata" ? "🕺" : "🎵"}
-            </span>
-          )}
-        </div>
-        <div className="p-3">
-          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${chipCls}`}>
-              {genreLabel}
-            </span>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.cls}`}>
-              {statusInfo.label}
-            </span>
-            {is_modified && (
-              <span className="text-xs text-orange-500 font-medium">수정됨</span>
+      <div className="bg-white">
+        {/* 1:1 이미지 */}
+        <Link href={`/classes/${id}`} className="block aspect-square w-full overflow-hidden">
+          <div
+            className="w-full h-full flex items-center justify-center bg-cover bg-center"
+            style={
+              imageUrl
+                ? { backgroundImage: `url(${imageUrl})` }
+                : { backgroundColor: GENRE_BG[genre] ?? GENRE_BG.other }
+            }
+          >
+            {!imageUrl && (
+              <span className="text-6xl opacity-30">
+                {genre === "salsa" ? "💃" : genre === "bachata" ? "🕺" : "🎵"}
+              </span>
             )}
           </div>
-          <p className="font-semibold text-sm text-gray-900 line-clamp-2 mb-1">{title}</p>
-          <p className="text-xs text-gray-500">
-            {levelLabel} · {formatDate(datetime)} · {region}
-          </p>
-          {host && (
-            <div className="flex items-center gap-1.5 mt-2">
-              {host.profile_image_url ? (
-                <Image
-                  src={host.profile_image_url}
-                  alt={host.nickname}
-                  width={20}
-                  height={20}
-                  className="rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-[10px] font-medium">
-                  {host.nickname[0]}
-                </div>
-              )}
-              <span className="text-xs text-gray-500">{host.nickname}</span>
+        </Link>
+
+        {/* 액션 아이콘 */}
+        <div className="flex items-center justify-between px-3 pt-3">
+          <div className="flex items-center gap-4">
+            {/* 좋아요 */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            {/* 댓글 */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            {/* 메세지 */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+              <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </div>
+          {/* 북마크 */}
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+            <polygon points="19 21 12 16 5 21 5 3 19 3" />
+          </svg>
+        </div>
+
+        {/* 개설자 아이콘 + 제목/정보 */}
+        <div className="flex items-center gap-2 px-3 pt-2 pb-3">
+          {host?.profile_image_url ? (
+            <Image
+              src={host.profile_image_url}
+              alt={host?.nickname ?? ""}
+              width={30}
+              height={30}
+              className="rounded-full object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="w-[30px] h-[30px] rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-medium flex-shrink-0">
+              {host?.nickname?.[0] ?? "?"}
             </div>
           )}
+          <div className="flex flex-col min-w-0">
+            <p className="text-base text-gray-900 font-semibold line-clamp-1">{title}</p>
+            <p className="text-gray-500" style={{ fontSize: "13px" }}>
+              {levelLabel} · {formatDate(datetime)} · {genreLabel}
+            </p>
+          </div>
         </div>
-      </Link>
+      </div>
     );
   }
 

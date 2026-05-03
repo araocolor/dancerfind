@@ -92,6 +92,13 @@ body {
   border-color: #111111;
 }
 
+.btn-logout-center {
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ── 칩 (장르/필터 선택) ── */
 .chip {
   display: inline-flex;
@@ -146,4 +153,88 @@ body {
   font-size: 12px;
   color: #ef4444;
   margin-top: 4px;
+}
+
+.apple-select-wrap {
+  position: relative;
+}
+
+.apple-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid #6e6e73;
+  border-bottom: 1.5px solid #6e6e73;
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+}
+
+.apple-select {
+  width: 100%;
+  height: 44px;
+  padding: 0 30px 0 12px;
+  border-radius: 12px;
+  border: 1px solid #d2d2d7;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  font-size: 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+  text-align-last: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.apple-select:focus {
+  outline: none;
+  border-color: #a1a1a6;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.16);
+}
+
+@keyframes search-slide-in-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.search-slide-in {
+  animation: search-slide-in-from-bottom 220ms ease-out both;
+}
+
+@keyframes search-slide-out-to-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.search-slide-out {
+  animation: search-slide-out-to-left 180ms ease-in both;
+}
+
+.search-half-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  height: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.12);
 }
