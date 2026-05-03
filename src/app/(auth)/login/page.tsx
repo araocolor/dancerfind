@@ -97,12 +97,22 @@ function LoginForm() {
         {kakaoLoading ? "로그인 중..." : "카카오로 로그인"}
       </button>
 
-      <p className="text-center text-sm mt-6" style={{ color: "#999999" }}>
-        계정이 없으신가요?{" "}
-        <Link href="/signup" className="font-bold underline" style={{ color: "#111111" }}>
-          회원가입
-        </Link>
-      </p>
+      <div className="mt-6 relative text-sm">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="absolute left-0 top-1/2 -translate-y-1/2"
+          style={{ color: "#999999" }}
+        >
+          {"<"}
+        </button>
+        <p className="text-center" style={{ color: "#999999" }}>
+          계정이 없으신가요?{" "}
+          <Link href="/signup" className="font-bold underline" style={{ color: "#111111" }}>
+            회원가입
+          </Link>
+        </p>
+      </div>
     </>
   );
 }
