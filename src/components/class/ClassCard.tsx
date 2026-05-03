@@ -64,7 +64,10 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
     return (
       <div className="bg-white">
         {/* 1:1 이미지 */}
-        <Link href={`/classes/${id}`} className="block aspect-square w-full overflow-hidden">
+        <Link
+          href={`/classes/${id}?from=home`}
+          className="block aspect-square w-full overflow-hidden"
+        >
           <div
             className="w-full h-full flex items-center justify-center bg-cover bg-center"
             style={

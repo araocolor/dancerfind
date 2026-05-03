@@ -22,6 +22,26 @@ function normalizeLevel(value: unknown): (typeof ALLOWED_LEVELS)[number] | null 
   return LEVEL_ALIASES[value.trim()] ?? LEVEL_ALIASES[normalized] ?? null;
 }
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("classes")
+    .select("*, host:profiles!host_id(id, nickname, profile_image_url)")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: "Not Found" }, { status: 404 });
+  }
+
+  return NextResponse.json(data);
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
