@@ -88,6 +88,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   const [existingImages, setExistingImages] = useState<ClassImage[]>(
     initialData?.images ?? []
   );
+  const [deletedImages, setDeletedImages] = useState<ClassImage[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -143,6 +144,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   }
 
   function removeExisting(i: number) {
+    setDeletedImages((p) => [...p, existingImages[i]]);
     setExistingImages((p) => p.filter((_, idx) => idx !== i));
   }
 
@@ -173,16 +175,16 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     for (const file of files) {
       const base = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
       try {
-        const compressionBase = { useWebWorker: true, fileType: "image/jpeg", initialQuality: 0.7 };
+        const compressionBase = { useWebWorker: true, fileType: "image/webp", initialQuality: 0.9 };
         const [icon, card, full] = await Promise.all([
-          imageCompression(file, { ...compressionBase, maxWidth: 200 }),
-          imageCompression(file, { ...compressionBase, maxWidth: 480 }),
-          imageCompression(file, { ...compressionBase, maxWidth: 1024 }),
+          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 200 }),
+          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 480 }),
+          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 1024 }),
         ]);
         const [iconUrl, cardUrl, fullUrl] = await Promise.all([
-          uploadViaApi(icon as File, `${base}-icon.jpg`),
-          uploadViaApi(card as File, `${base}-card.jpg`),
-          uploadViaApi(full as File, `${base}-full.jpg`),
+          uploadViaApi(icon as File, `${base}-icon.webp`),
+          uploadViaApi(card as File, `${base}-card.webp`),
+          uploadViaApi(full as File, `${base}-full.webp`),
         ]);
         result.push({
           icon_url: iconUrl,
@@ -222,6 +224,21 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("로그인이 필요합니다.");
+
+      // 삭제된 이미지 Storage에서 제거
+      if (deletedImages.length > 0) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const paths = deletedImages.flatMap((img) =>
+          [img.icon_url, img.card_url, img.full_url].map((url) =>
+            url.replace(`${supabaseUrl}/storage/v1/object/public/class-images/`, "")
+          )
+        );
+        await fetch("/api/storage/class-images", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths }),
+        });
+      }
 
       const uploaded = newFiles.length > 0 ? await uploadImages(newFiles, user.id) : [];
       const images = [...existingImages, ...uploaded];

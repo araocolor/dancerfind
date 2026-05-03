@@ -27,7 +27,7 @@ export default async function Header() {
       </div>
       <Link
         href="/"
-        className="absolute left-1/2 -translate-x-1/2 font-bold text-xl text-[#FEE500] leading-none"
+        className="absolute left-1/2 -translate-x-1/2 font-bold text-xl text-[#666666] leading-none"
       >
         LOCO
       </Link>
