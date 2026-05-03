@@ -178,7 +178,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         const compressionBase = { useWebWorker: true, fileType: "image/webp", initialQuality: 0.9 };
         const [icon, card, full] = await Promise.all([
           imageCompression(file, { ...compressionBase, maxWidthOrHeight: 200 }),
-          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 480 }),
+          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 600 }),
           imageCompression(file, { ...compressionBase, maxWidthOrHeight: 1024 }),
         ]);
         const [iconUrl, cardUrl, fullUrl] = await Promise.all([
