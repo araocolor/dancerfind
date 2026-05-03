@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export default function SearchNavButton({ isLoggedIn }: { isLoggedIn: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
+  void isLoggedIn;
 
   function handleClick() {
-    router.push("/search?slide=1");
+    router.push(`${pathname}?search=open`);
   }
 
   return (

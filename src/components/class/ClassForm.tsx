@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import imageCompression from "browser-image-compression";
 import { createClient } from "@/lib/supabase/client";
 import { GENRES, LEVELS, CLASS_TYPES, REGIONS } from "@/lib/constants";
 import type { ClassImage, DanceClass } from "@/types/class";
@@ -78,6 +77,61 @@ interface ClassFormProps {
   initialData?: Partial<DanceClass>;
   classId?: string;
   userRole: "member" | "pro" | "admin";
+}
+
+async function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("이미지를 불러올 수 없습니다."));
+    };
+    img.src = url;
+  });
+}
+
+async function canvasToWebpFile(
+  canvas: HTMLCanvasElement,
+  fileName: string,
+  quality: number
+): Promise<File> {
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (!result) {
+          reject(new Error("이미지 변환에 실패했습니다."));
+          return;
+        }
+        resolve(result);
+      },
+      "image/webp",
+      quality
+    );
+  });
+
+  return new File([blob], fileName, { type: "image/webp" });
+}
+
+async function resizeImageToWidth(file: File, width: number): Promise<File> {
+  const image = await loadImage(file);
+  const targetWidth = Math.min(width, image.width);
+  const targetHeight = Math.round((image.height * targetWidth) / image.width);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("이미지 처리에 실패했습니다.");
+
+  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  return canvasToWebpFile(canvas, `${file.name.replace(/\.[^.]+$/, "") || "image"}.webp`, 0.9);
 }
 
 export default function ClassForm({ initialData, classId, userRole }: ClassFormProps) {
@@ -175,11 +229,10 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     for (const file of files) {
       const base = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
       try {
-        const compressionBase = { useWebWorker: true, fileType: "image/webp", initialQuality: 0.9 };
         const [icon, card, full] = await Promise.all([
-          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 200 }),
-          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 600 }),
-          imageCompression(file, { ...compressionBase, maxWidthOrHeight: 1024 }),
+          resizeImageToWidth(file, 200),
+          resizeImageToWidth(file, 600),
+          resizeImageToWidth(file, 1024),
         ]);
         const [iconUrl, cardUrl, fullUrl] = await Promise.all([
           uploadViaApi(icon as File, `${base}-icon.webp`),

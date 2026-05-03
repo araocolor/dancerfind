@@ -1,0 +1,117 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import MyPageClient from "@/components/user/MyPageClient";
+import type { ClassStatus } from "@/types/class";
+import type { ApplicationStatus } from "@/types/application";
+import type { UserRole } from "@/types/user";
+
+const MY_PAGE_CACHE_PREFIX = "loco_mypage_cache_v1";
+
+interface CachedProfile {
+  id: string;
+  nickname: string;
+  bio: string | null;
+  region: string | null;
+  role: UserRole;
+  profile_image_url: string | null;
+  kakao_notification_enabled: boolean;
+}
+
+interface CachedAppliedClassInfo {
+  id: string;
+  title: string;
+  datetime: string;
+  region: string;
+  status: ClassStatus;
+}
+
+interface CachedAppliedClass {
+  id: string;
+  status: ApplicationStatus;
+  created_at: string;
+  class: CachedAppliedClassInfo | null;
+}
+
+interface MyPageSummaryCache {
+  profile: CachedProfile;
+  appliedClasses: CachedAppliedClass[];
+  hasPendingProRequest: boolean;
+}
+
+export default function MyPageCacheLoader() {
+  const router = useRouter();
+  const [data, setData] = useState<MyPageSummaryCache | null>(() => {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const raw = sessionStorage.getItem(MY_PAGE_CACHE_PREFIX);
+      return raw ? (JSON.parse(raw) as MyPageSummaryCache) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const cacheKey = MY_PAGE_CACHE_PREFIX;
+    if (data) return;
+
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/mypage/summary", { method: "GET" });
+
+        if (res.status === 401) {
+          router.replace("/login?next=/mypage");
+          return;
+        }
+
+        const json = await res.json();
+
+        if (json?.needsOnboarding) {
+          router.replace("/onboarding");
+          return;
+        }
+
+        if (!res.ok) {
+          if (!cancelled) setError("마이페이지를 불러오지 못했습니다.");
+          return;
+        }
+
+        if (!cancelled) {
+          setData(json as MyPageSummaryCache);
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(json));
+          } catch {}
+        }
+      } catch {
+        if (!cancelled) setError("마이페이지를 불러오지 못했습니다.");
+      }
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data, router]);
+
+  if (error) {
+    return <div className="max-w-3xl mx-auto px-4 py-10 text-sm text-red-500">{error}</div>;
+  }
+
+  if (!data) {
+    return <div className="max-w-3xl mx-auto px-4 py-10 text-sm text-gray-500">로딩 중...</div>;
+  }
+
+  return (
+    <MyPageClient
+      initialProfile={data.profile}
+      initialAppliedClasses={data.appliedClasses}
+      hasPendingProRequest={data.hasPendingProRequest}
+    />
+  );
+}

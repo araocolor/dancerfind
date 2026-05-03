@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   {
@@ -48,8 +48,8 @@ const NAV_ITEMS = [
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.3-4.3" />
+        <path d="M12 21s-6-5.1-6-10a6 6 0 1 1 12 0c0 4.9-6 10-6 10z" />
+        <circle cx="12" cy="11" r="2.5" />
       </svg>
     ),
   },
@@ -72,7 +72,7 @@ const NAV_ITEMS = [
 
 export default function BottomNav({ isLoggedIn }: { isLoggedIn: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
+  void isLoggedIn;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#e5e7eb] h-16 flex items-center">
@@ -82,23 +82,6 @@ export default function BottomNav({ isLoggedIn }: { isLoggedIn: boolean }) {
         const className = `flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors ${
           isActive ? "text-[#FEE500]" : "text-gray-400"
         }`;
-
-        if (href === "/search") {
-          const onSearchClick = pathname.startsWith("/search")
-            ? () => router.push(`${pathname}?search=open`)
-            : () => router.push("/search/results");
-          return (
-            <button
-              key={href}
-              type="button"
-              onClick={onSearchClick}
-              className={className}
-            >
-              {icon}
-              <span className="sr-only">{label}</span>
-            </button>
-          );
-        }
 
         return (
           <Link key={href} href={href} className={className}>

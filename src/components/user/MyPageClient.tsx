@@ -2,7 +2,7 @@
 
 import imageCompression from "browser-image-compression";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { REGIONS } from "@/lib/constants";
@@ -10,7 +10,7 @@ import type { ClassStatus } from "@/types/class";
 import type { ApplicationStatus } from "@/types/application";
 import type { UserRole } from "@/types/user";
 
-type HostedFilter = "all" | ClassStatus;
+const MY_PAGE_CACHE_KEY = "loco_mypage_cache_v1";
 
 interface MyProfile {
   id: string;
@@ -20,14 +20,6 @@ interface MyProfile {
   role: UserRole;
   profile_image_url: string | null;
   kakao_notification_enabled: boolean;
-}
-
-interface HostedClassItem {
-  id: string;
-  title: string;
-  status: ClassStatus;
-  datetime: string;
-  region: string;
 }
 
 interface AppliedClassInfo {
@@ -47,16 +39,9 @@ interface AppliedClassItem {
 
 interface MyPageClientProps {
   initialProfile: MyProfile;
-  initialHostedClasses: HostedClassItem[];
   initialAppliedClasses: AppliedClassItem[];
   hasPendingProRequest: boolean;
 }
-
-const CLASS_STATUS_LABELS: Record<ClassStatus, string> = {
-  recruiting: "모집중",
-  closed: "마감",
-  cancelled: "취소",
-};
 
 const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: "신청대기",
@@ -68,12 +53,6 @@ function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   const days = ["일", "월", "화", "수", "목", "금", "토"];
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${days[d.getDay()]})`;
-}
-
-function getStatusClass(status: ClassStatus) {
-  if (status === "recruiting") return "bg-green-50 text-green-600";
-  if (status === "closed") return "bg-gray-100 text-gray-600";
-  return "bg-red-50 text-red-600";
 }
 
 function getApplicationStatusClass(status: ApplicationStatus) {
@@ -155,7 +134,6 @@ async function toAvatarFile(file: File): Promise<File> {
 
 export default function MyPageClient({
   initialProfile,
-  initialHostedClasses,
   initialAppliedClasses,
   hasPendingProRequest,
 }: MyPageClientProps) {
@@ -164,15 +142,13 @@ export default function MyPageClient({
   const [nickname, setNickname] = useState(initialProfile.nickname);
   const [bio, setBio] = useState(initialProfile.bio ?? "");
   const [region, setRegion] = useState(initialProfile.region ?? "");
+  const [profileImageUrl, setProfileImageUrl] = useState(initialProfile.profile_image_url);
   const [kakaoNotificationEnabled, setKakaoNotificationEnabled] = useState(
     initialProfile.kakao_notification_enabled
   );
 
-  const [hostedClasses, setHostedClasses] = useState(initialHostedClasses);
   const [appliedClasses, setAppliedClasses] = useState(initialAppliedClasses);
   const [pendingProRequest, setPendingProRequest] = useState(hasPendingProRequest);
-
-  const [hostedFilter, setHostedFilter] = useState<HostedFilter>("all");
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
@@ -182,16 +158,40 @@ export default function MyPageClient({
   const [savingNotification, setSavingNotification] = useState(false);
   const [submittingProRequest, setSubmittingProRequest] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [runningHostedActionId, setRunningHostedActionId] = useState<string | null>(null);
   const [runningAppliedActionId, setRunningAppliedActionId] = useState<string | null>(null);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const filteredHostedClasses = useMemo(() => {
-    if (hostedFilter === "all") return hostedClasses;
-    return hostedClasses.filter((cls) => cls.status === hostedFilter);
-  }, [hostedClasses, hostedFilter]);
+  useEffect(() => {
+    const payload = {
+      profile: {
+        id: initialProfile.id,
+        nickname,
+        bio: bio || null,
+        region: region || null,
+        role: initialProfile.role,
+        profile_image_url: profileImageUrl,
+        kakao_notification_enabled: kakaoNotificationEnabled,
+      },
+      appliedClasses,
+      hasPendingProRequest: pendingProRequest,
+    };
+
+    try {
+      sessionStorage.setItem(MY_PAGE_CACHE_KEY, JSON.stringify(payload));
+    } catch {}
+  }, [
+    initialProfile.id,
+    initialProfile.role,
+    nickname,
+    bio,
+    region,
+    profileImageUrl,
+    kakaoNotificationEnabled,
+    appliedClasses,
+    pendingProRequest,
+  ]);
 
   async function checkNickname() {
     if (!nickname || nickname.length < 2) {
@@ -306,6 +306,7 @@ export default function MyPageClient({
 
       if (uploadedImageUrl) {
         updates.profile_image_url = uploadedImageUrl;
+        setProfileImageUrl(uploadedImageUrl);
       }
 
       const { error: updateError } = await supabase
@@ -361,40 +362,6 @@ export default function MyPageClient({
       setError(err instanceof Error ? err.message : "설정 저장 중 오류가 발생했습니다.");
     } finally {
       setSavingNotification(false);
-    }
-  }
-
-  async function handleCancelHostedClass(classId: string) {
-    const confirmed = confirm(
-      "신청자가 있는 경우 취소 처리되고, 없는 경우 즉시 삭제됩니다. 계속할까요?"
-    );
-    if (!confirmed) return;
-
-    setRunningHostedActionId(classId);
-    try {
-      const res = await fetch(`/api/classes/${classId}`, { method: "DELETE" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "처리 중 오류가 발생했습니다.");
-        return;
-      }
-
-      if (data.deleted) {
-        setHostedClasses((prev) => prev.filter((cls) => cls.id !== classId));
-      } else {
-        setHostedClasses((prev) =>
-          prev.map((cls) =>
-            cls.id === classId ? { ...cls, status: "cancelled" } : cls
-          )
-        );
-      }
-
-      setSuccess("요청이 반영되었습니다.");
-    } catch {
-      setError("처리 중 오류가 발생했습니다.");
-    } finally {
-      setRunningHostedActionId(null);
     }
   }
 
@@ -469,6 +436,9 @@ export default function MyPageClient({
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      try {
+        sessionStorage.removeItem(MY_PAGE_CACHE_KEY);
+      } catch {}
       router.replace("/");
       router.refresh();
     } catch {
@@ -500,9 +470,9 @@ export default function MyPageClient({
 
         <div className="flex items-center gap-3">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-500">
-            {avatarPreviewUrl || initialProfile.profile_image_url ? (
+            {avatarPreviewUrl || profileImageUrl ? (
               <img
-                src={avatarPreviewUrl ?? initialProfile.profile_image_url ?? ""}
+                src={avatarPreviewUrl ?? profileImageUrl ?? ""}
                 alt="프로필"
                 className="w-full h-full object-cover"
               />
@@ -577,56 +547,9 @@ export default function MyPageClient({
 
       <section id="hosted" className="card p-4 space-y-4 scroll-mt-32">
         <h2 className="text-base font-semibold">내가 개설한 클래스</h2>
-
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          <button type="button" className={`chip ${hostedFilter === "all" ? "active" : ""}`} onClick={() => setHostedFilter("all")}>
-            전체
-          </button>
-          <button type="button" className={`chip ${hostedFilter === "recruiting" ? "active" : ""}`} onClick={() => setHostedFilter("recruiting")}>
-            모집중
-          </button>
-          <button type="button" className={`chip ${hostedFilter === "closed" ? "active" : ""}`} onClick={() => setHostedFilter("closed")}>
-            마감
-          </button>
-          <button type="button" className={`chip ${hostedFilter === "cancelled" ? "active" : ""}`} onClick={() => setHostedFilter("cancelled")}>
-            취소
-          </button>
-        </div>
-
-        {filteredHostedClasses.length === 0 ? (
-          <p className="text-sm text-gray-500">표시할 클래스가 없습니다.</p>
-        ) : (
-          <div className="space-y-3">
-            {filteredHostedClasses.map((cls) => (
-              <div key={cls.id} className="border border-gray-100 rounded-xl p-3 bg-white">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusClass(cls.status)}`}>
-                    {CLASS_STATUS_LABELS[cls.status]}
-                  </span>
-                </div>
-                <Link href={`/classes/${cls.id}`} className="font-semibold text-sm text-gray-900 block">
-                  {cls.title}
-                </Link>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formatDate(cls.datetime)} · {cls.region}
-                </p>
-                <div className="flex gap-2 mt-3">
-                  <Link href={`/classes/${cls.id}/edit`} className="btn-outline text-sm py-2 flex-1 text-center">
-                    수정
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn-outline text-sm py-2 flex-1 text-red-500 border-red-200"
-                    onClick={() => handleCancelHostedClass(cls.id)}
-                    disabled={runningHostedActionId === cls.id}
-                  >
-                    {runningHostedActionId === cls.id ? "처리 중..." : "취소/삭제"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <button type="button" className="btn-outline w-full text-sm py-3 text-gray-500">
+          내가 개설한 클래스
+        </button>
       </section>
 
       <section id="applied" className="card p-4 space-y-4 scroll-mt-32">

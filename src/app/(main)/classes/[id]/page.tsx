@@ -7,6 +7,7 @@ import { DANCE_GENRE_LABELS, CLASS_LEVEL_LABELS } from "@/types/class";
 import ApplyButton from "@/components/class/ApplyButton";
 import ApplicantList from "@/components/class/ApplicantList";
 import CancelClassButton from "@/components/class/CancelClassButton";
+import ClassDetailImageGallery from "@/components/class/ClassDetailImageGallery";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -137,20 +138,7 @@ export default async function ClassDetailPage({
     <div className="max-w-xl mx-auto pb-32">
       {/* 이미지 갤러리 */}
       {images.length > 0 ? (
-        <div className="flex overflow-x-auto snap-x snap-mandatory">
-          {images.map((img, i) => (
-            <div key={i} className="flex-shrink-0 w-full snap-start">
-              <Image
-                src={img.full_url ?? img.card_url ?? ""}
-                alt={`클래스 이미지 ${i + 1}`}
-                width={1200}
-                height={900}
-                style={{ width: "100%", height: "auto", maxHeight: "70vh", objectFit: "contain" }}
-                className="bg-black/5"
-              />
-            </div>
-          ))}
-        </div>
+        <ClassDetailImageGallery images={images} />
       ) : (
         <div className="w-full h-[160px] bg-gray-100 flex items-center justify-center text-5xl opacity-30">
           🎵
