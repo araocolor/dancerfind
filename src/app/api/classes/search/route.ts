@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const region = searchParams.get("region");
   const status = searchParams.get("status");
   const class_type = searchParams.get("class_type");
-  const genre = searchParams.get("genre");
+  const genres = searchParams.getAll("genre");
   const keyword = searchParams.get("keyword");
   const sort = searchParams.get("sort") ?? "latest";
   const page = parseInt(searchParams.get("page") ?? "0");
@@ -27,7 +27,10 @@ export async function GET(request: NextRequest) {
   if (region && region !== "전체") query = query.eq("region", region);
   if (status && status !== "전체") query = query.eq("status", status);
   if (class_type && class_type !== "전체") query = query.eq("class_type", class_type);
-  if (genre && genre !== "전체") query = query.eq("genre", genre);
+  if (genres.length > 0) {
+    const filteredGenres = genres.filter((g) => g && g !== "전체");
+    if (filteredGenres.length > 0) query = query.in("genre", filteredGenres);
+  }
   if (keyword) {
     query = query.or(`title.ilike.%${keyword}%,description.ilike.%${keyword}%`);
   }

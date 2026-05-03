@@ -181,6 +181,7 @@ export default function MyPageClient({
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingNotification, setSavingNotification] = useState(false);
   const [submittingProRequest, setSubmittingProRequest] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [runningHostedActionId, setRunningHostedActionId] = useState<string | null>(null);
   const [runningAppliedActionId, setRunningAppliedActionId] = useState<string | null>(null);
 
@@ -461,6 +462,22 @@ export default function MyPageClient({
     }
   }
 
+  async function handleLogout() {
+    setError("");
+    setSuccess("");
+    setLoggingOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setError("로그아웃 중 오류가 발생했습니다.");
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-4 pb-24 space-y-5">
       <div className="sticky top-14 z-30 bg-[#f6f8fb] py-2">
@@ -710,6 +727,15 @@ export default function MyPageClient({
           </p>
         )}
       </section>
+
+      <button
+        type="button"
+        className="btn-outline btn-logout-center text-red-500 border-red-200"
+        onClick={handleLogout}
+        disabled={loggingOut}
+      >
+        {loggingOut ? "로그아웃 중..." : "로그아웃"}
+      </button>
     </div>
   );
 }
