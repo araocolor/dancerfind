@@ -34,6 +34,7 @@ interface FormState {
   contact: string;
   description: string;
   region: string;
+  is_public: boolean;
 }
 
 const EMPTY: FormState = {
@@ -53,6 +54,7 @@ const EMPTY: FormState = {
   contact: "",
   description: "",
   region: "",
+  is_public: true,
 };
 
 function toFormState(d: Partial<DanceClass>): FormState {
@@ -73,6 +75,7 @@ function toFormState(d: Partial<DanceClass>): FormState {
     contact: d.contact ?? "",
     description: d.description ?? "",
     region: d.region ?? "",
+    is_public: (d as Record<string, unknown>).is_public !== false,
   };
 }
 
@@ -299,12 +302,11 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     return result;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
 
     const required: (keyof FormState)[] = [
-      "title", "level", "datetime", "deadline",
-      "location_address", "capacity", "contact", "region",
+      "title", "level", "region",
     ];
     if (required.some((k) => !form[k]) || form.genres.length === 0) {
       setError("필수 항목을 모두 입력해주세요.");
@@ -355,6 +357,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         contact: form.contact,
         description: form.description,
         region: form.region,
+        is_public: form.is_public,
         images,
       };
 
@@ -459,7 +462,24 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
         {/* 섹션 3 — 제목 + 본문 */}
         <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">제목 / 본문</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">제목 / 본문</p>
+            <div className="flex gap-1">
+              {(["오픈", "비공개"] as const).map((v) => {
+                const active = v === "오픈" ? form.is_public : !form.is_public;
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => set("is_public", v === "오픈")}
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors ${active ? "bg-black text-white" : "text-gray-400"}`}
+                  >
+                    {v}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <input
             type="text"
             className="input-field"
@@ -511,70 +531,67 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
           )}
         </div>
 
-        {/* 섹션 5 — 상세 입력 토글 */}
-        {!showDetail && (
-          <div className="px-4 py-5 border-b border-[#e9eaec]">
+        {/* 섹션 5+6 — 장소 상세 */}
+        <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">상세 정보</p>
             <button
               type="button"
-              onClick={() => setShowDetail(true)}
-              className="w-full h-12 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm"
+              onClick={() => setShowDetail((v) => !v)}
+              className="text-xs text-gray-400 underline"
             >
-              + 상세 정보 입력
+              {showDetail ? "상세접기" : "상세 정보 입력"}
             </button>
           </div>
-        )}
-
-        {/* 섹션 6 — 장소 상세 */}
-        {showDetail && (
-          <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">상세 정보</p>
-
-            {/* 구분 */}
-            <div>
-              <label className="field-label">구분 *</label>
-              <div className="flex gap-2">
-                {CLASS_TYPES.map((t) => (
-                  <button key={t.value} type="button" className={`chip ${form.class_type === t.value ? "active" : ""}`} onClick={() => set("class_type", t.value)}>
-                    {t.label}
-                  </button>
-                ))}
+          {showDetail && (
+            <>
+              {/* 구분 */}
+              <div>
+                <label className="field-label">구분 *</label>
+                <div className="flex gap-2">
+                  {CLASS_TYPES.map((t) => (
+                    <button key={t.value} type="button" className={`chip ${form.class_type === t.value ? "active" : ""}`} onClick={() => set("class_type", t.value)}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* 일시 */}
-            <div>
-              <label className="field-label">일시 *</label>
-              <input type="datetime-local" className="input-field" value={form.datetime} onChange={(e) => set("datetime", e.target.value)} />
-            </div>
-
-            {/* 신청 마감일 */}
-            <div>
-              <label className="field-label">신청 마감일 *</label>
-              <input type="date" className="input-field" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
-            </div>
-
-            {/* 장소 */}
-            <div>
-              <label className="field-label">장소 *</label>
-              <div className="flex gap-2">
-                <input type="text" className="input-field cursor-pointer" placeholder="주소 검색" value={form.location_address} readOnly onClick={openAddressSearch} />
-                <button type="button" onClick={openAddressSearch} className="flex-shrink-0 px-4 py-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-[12px] whitespace-nowrap">검색</button>
+              {/* 일시 */}
+              <div>
+                <label className="field-label">일시 *</label>
+                <input type="datetime-local" className="input-field" value={form.datetime} onChange={(e) => set("datetime", e.target.value)} />
               </div>
-            </div>
 
-            {/* 정원 */}
-            <div>
-              <label className="field-label">정원 *</label>
-              <input type="number" className="input-field" placeholder="최대 인원 수" value={form.capacity} onChange={(e) => set("capacity", e.target.value)} min={1} />
-            </div>
+              {/* 신청 마감일 */}
+              <div>
+                <label className="field-label">신청 마감일 *</label>
+                <input type="date" className="input-field" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
+              </div>
 
-            {/* 연락처 */}
-            <div>
-              <label className="field-label">연락처 *</label>
-              <input type="tel" className="input-field" placeholder="카카오톡 ID 또는 전화번호" value={form.contact} onChange={(e) => set("contact", e.target.value)} />
-            </div>
-          </div>
-        )}
+              {/* 장소 */}
+              <div>
+                <label className="field-label">장소 *</label>
+                <div className="flex gap-2">
+                  <input type="text" className="input-field cursor-pointer" placeholder="주소 검색" value={form.location_address} readOnly onClick={openAddressSearch} />
+                  <button type="button" onClick={openAddressSearch} className="flex-shrink-0 px-4 py-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-[12px] whitespace-nowrap">검색</button>
+                </div>
+              </div>
+
+              {/* 정원 */}
+              <div>
+                <label className="field-label">정원 *</label>
+                <input type="number" className="input-field" placeholder="최대 인원 수" value={form.capacity} onChange={(e) => set("capacity", e.target.value)} min={1} />
+              </div>
+
+              {/* 연락처 */}
+              <div>
+                <label className="field-label">연락처 *</label>
+                <input type="tel" className="input-field" placeholder="카카오톡 ID 또는 전화번호" value={form.contact} onChange={(e) => set("contact", e.target.value)} />
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="px-4 pt-5">
           {error && <p className="error-text mb-3">{error}</p>}
