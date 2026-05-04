@@ -42,21 +42,20 @@ interface MyPageSummaryCache {
 
 export default function MyPageCacheLoader() {
   const router = useRouter();
-  const [data, setData] = useState<MyPageSummaryCache | null>(() => {
-    if (typeof window === "undefined") return null;
-
-    try {
-      const raw = sessionStorage.getItem(MY_PAGE_CACHE_PREFIX);
-      return raw ? (JSON.parse(raw) as MyPageSummaryCache) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [data, setData] = useState<MyPageSummaryCache | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const cacheKey = MY_PAGE_CACHE_PREFIX;
     if (data) return;
+
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (raw) {
+        setData(JSON.parse(raw) as MyPageSummaryCache);
+        return;
+      }
+    } catch {}
 
     let cancelled = false;
 
@@ -107,11 +106,5 @@ export default function MyPageCacheLoader() {
     return <div className="max-w-3xl mx-auto px-4 py-10 text-sm text-gray-500">로딩 중...</div>;
   }
 
-  return (
-    <MyPageClient
-      initialProfile={data.profile}
-      initialAppliedClasses={data.appliedClasses}
-      hasPendingProRequest={data.hasPendingProRequest}
-    />
-  );
+  return <MyPageClient profile={data.profile} />;
 }

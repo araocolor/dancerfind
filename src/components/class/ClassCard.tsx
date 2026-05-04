@@ -57,12 +57,25 @@ function formatDate(dateStr: string) {
   return `${m}/${dd}(${day}) ${hh}:${mm}`;
 }
 
+function isClassStarted(datetime: string) {
+  return new Date(datetime).getTime() <= Date.now();
+}
+
+function calcDaysLeft(deadline: string) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const d = new Date(deadline);
+  d.setHours(0, 0, 0, 0);
+  return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
 export default function ClassCard({ classData }: ClassCardProps) {
-  const { id, title, genres, level, datetime, region, status, images, host, is_modified, description } =
+  const { id, title, genres, level, datetime, deadline, region, status, images, host, is_modified, description } =
     classData;
   const [expanded, setExpanded] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [statusExpanded, setStatusExpanded] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [userExpanded, setUserExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -284,6 +297,46 @@ export default function ClassCard({ classData }: ClassCardProps) {
               </div>
             </div>
           )}
+          {/* 상태 배지 */}
+          {(status === "recruiting" || status === "closed") && (() => {
+            const daysLeft = deadline ? calcDaysLeft(deadline) : null;
+            const deadlineLabel = deadline
+              ? new Date(deadline).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric" })
+              : "";
+            const daysText = daysLeft !== null
+              ? daysLeft > 0 ? `마감 ${daysLeft}일전` : daysLeft === 0 ? "오늘 마감" : "마감"
+              : "";
+            const inProgress = status === "recruiting" && isClassStarted(datetime);
+            return (
+              <div className="absolute top-2 left-2 flex items-center">
+                {/* 확장 버튼 — 기존 버튼 뒤에서 오른쪽으로 슬라이드 */}
+                <div
+                  className="absolute left-0 flex items-center overflow-hidden transition-all duration-300 ease-out pointer-events-none"
+                  style={{ maxWidth: statusExpanded ? 280 : 0 }}
+                >
+                  <div className="bg-black text-[#FEE500] text-xs font-semibold rounded-full whitespace-nowrap"
+                    style={{ padding: "4px 12px 4px 70px" }}
+                  >
+                    {deadlineLabel} · {daysText}
+                  </div>
+                </div>
+                {/* 기존 배지 버튼 — z-index로 위에 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setStatusExpanded((v) => {
+                      if (!v) setTimeout(() => setStatusExpanded(false), 4000);
+                      return !v;
+                    });
+                  }}
+                  className={`relative z-10 flex items-center text-[#FEE500] text-xs font-semibold rounded-full whitespace-nowrap ${inProgress ? "bg-red-600 border border-[#FEE500]" : status === "recruiting" ? "bg-black border border-[#FEE500]" : "bg-black"}`}
+                  style={{ padding: "6px 16px" }}
+                >
+                  {inProgress ? "수업중" : status === "recruiting" ? "모집중" : "마감"}
+                </button>
+              </div>
+            );
+          })()}
           {totalImages > 1 && (
             <div className="absolute top-2 right-2 bg-white/80 text-gray-900 text-xs font-medium px-2.5 py-0.5 rounded-full">
               {imgIndex + 1}/{totalImages}
