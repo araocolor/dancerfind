@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { GENRES, LEVELS, REGIONS } from "@/lib/constants";
+import { GENRES, CATEGORIES, LEVELS, REGIONS } from "@/lib/constants";
 import type { ClassImage, DanceClass } from "@/types/class";
 
 declare global {
@@ -19,6 +19,7 @@ declare global {
 
 interface FormState {
   genres: string[];
+  category: string;
   title: string;
   level: string;
   class_type: string;
@@ -39,6 +40,7 @@ interface FormState {
 
 const EMPTY: FormState = {
   genres: [],
+  category: "",
   title: "",
   level: "",
   class_type: "group",
@@ -60,6 +62,7 @@ const EMPTY: FormState = {
 function toFormState(d: Partial<DanceClass>): FormState {
   return {
     genres: d.genres ?? [],
+    category: d.category ?? "",
     title: d.title ?? "",
     level: d.level ?? "",
     class_type: d.class_type ?? "group",
@@ -151,7 +154,7 @@ async function resizeImageToWidth(file: File, width: number): Promise<File> {
   return canvasToWebpFile(canvas, `${file.name.replace(/\.[^.]+$/, "") || "image"}.webp`, 0.9);
 }
 
-export default function ClassForm({ initialData, classId, userRole }: ClassFormProps) {
+export default function ClassForm({ initialData, classId, userRole: _userRole }: ClassFormProps) {
   const router = useRouter();
   const isCreateMode = !classId;
   const [form, setForm] = useState<FormState>(
@@ -357,6 +360,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         contact: form.contact,
         description: form.description,
         region: form.region,
+        category: form.category || null,
         is_public: form.is_public,
         images,
       };
@@ -390,7 +394,6 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     }
   }
 
-  const canEvent = userRole === "pro" || userRole === "admin";
   const totalImages = existingImages.length + newFiles.length;
 
   return (
@@ -428,7 +431,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
         {/* 섹션 2 — 장르 */}
         <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">장르 (최대 3개)</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">장르 (최대 2개)</p>
           <div className="flex gap-2 flex-wrap">
             {GENRES.map((g) => (
               <button
@@ -439,7 +442,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
                   const exists = form.genres.includes(g.value);
                   const next = exists
                     ? form.genres.filter((v) => v !== g.value)
-                    : form.genres.length >= 3
+                    : form.genres.length >= 2
                     ? [...form.genres.slice(1), g.value]
                     : [...form.genres, g.value];
                   set("genres", next);
@@ -449,15 +452,23 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
               </button>
             ))}
           </div>
-          {canEvent && (
-            <div className="flex gap-2 mt-3">
-              {(["class", "event"] as const).map((v) => (
-                <button key={v} type="button" className={`chip ${form.type === v ? "active" : ""}`} onClick={() => set("type", v)}>
-                  {v === "class" ? "클래스" : "이벤트"}
-                </button>
-              ))}
-            </div>
-          )}
+        </div>
+
+        {/* 섹션 2-2 — 분류 */}
+        <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">분류 (1개 선택)</p>
+          <div className="flex gap-2 flex-wrap">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                className={`chip ${form.category === c.value ? "active" : ""}`}
+                onClick={() => set("category", form.category === c.value ? "" : c.value)}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 섹션 3 — 제목 + 본문 */}

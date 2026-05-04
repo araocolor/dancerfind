@@ -13,7 +13,7 @@ export default function MainHeader() {
           +
         </Link>
       </div>
-      <div className="absolute left-1/2 -translate-x-1/2 font-bold text-xl text-[#FEE500] leading-none">
+      <div className="absolute left-1/2 -translate-x-1/2 font-bold text-xl text-[#808080] leading-none">
         LOCO
       </div>
       <div className="ml-auto w-10 flex items-center justify-end">

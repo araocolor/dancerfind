@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { DanceClass, DANCE_GENRE_LABELS, CLASS_LEVEL_LABELS } from "@/types/class";
@@ -14,7 +17,6 @@ export interface ClassWithHost extends DanceClass {
 
 interface ClassCardProps {
   classData: ClassWithHost;
-  viewMode: "list" | "card";
 }
 
 const GENRE_BG: Record<string, string> = {
@@ -50,9 +52,10 @@ function formatDate(dateStr: string) {
   return `${m}/${dd}(${day}) ${hh}:${mm}`;
 }
 
-export default function ClassCard({ classData, viewMode }: ClassCardProps) {
-  const { id, title, genres, level, datetime, region, status, images, host, is_modified } =
+export default function ClassCard({ classData }: ClassCardProps) {
+  const { id, title, genres, level, datetime, region, status, images, host, is_modified, description } =
     classData;
+  const [expanded, setExpanded] = useState(false);
 
   const primaryGenre = genres?.[0] ?? "other";
   const imageUrl = images?.[0]?.card_url ?? null;
@@ -61,19 +64,46 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
   const statusInfo = STATUS_MAP[status] ?? STATUS_MAP.recruiting;
   const chipCls = GENRE_CHIP[primaryGenre] ?? GENRE_CHIP.other;
 
-  if (viewMode === "card") {
-    return (
+  return (
       <div className="bg-white">
-        <Link href={`/classes/${id}?from=home`} className="block w-full overflow-hidden">
-          {imageUrl ? (
+        {/* 개설자 아이콘 - 상단 */}
+        <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+          {host?.profile_image_url ? (
             <Image
-              src={imageUrl}
-              alt={title}
-              width={0}
-              height={0}
-              sizes="100vw"
-              style={{ width: "100%", height: "auto" }}
+              src={host.profile_image_url}
+              alt={host?.nickname ?? ""}
+              width={32}
+              height={32}
+              className="rounded-full object-cover flex-shrink-0"
             />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-medium flex-shrink-0">
+              {host?.nickname?.[0] ?? "?"}
+            </div>
+          )}
+          <div className="flex flex-col flex-1 gap-0">
+            <span className="font-bold text-gray-900" style={{ fontSize: "15px", lineHeight: "1.1" }}>{host?.nickname ?? ""}</span>
+            <span className="text-gray-400" style={{ fontSize: "13px", lineHeight: "1.1" }}>{region} | {levelLabel} | {genreLabel}</span>
+          </div>
+          <button className="p-1 text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+            </svg>
+          </button>
+        </div>
+
+        <Link href={`/classes/${id}?from=home`} className="block w-full overflow-hidden ">
+          {imageUrl ? (
+            <div style={{ maxHeight: "calc(100vw * 5 / 4)", overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
+              <Image
+                src={imageUrl}
+                alt={title}
+                width={0}
+                height={0}
+                sizes="100vw"
+                style={{ width: "100%", height: "auto" }}
+              />
+            </div>
           ) : (
             <div
               className="w-full aspect-[3/4] flex items-center justify-center"
@@ -108,68 +138,23 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
           </svg>
         </div>
 
-        {/* 개설자 아이콘 + 제목/정보 */}
-        <div className="flex items-center gap-2 px-3 pt-2 pb-3">
-          {host?.profile_image_url ? (
-            <Image
-              src={host.profile_image_url}
-              alt={host?.nickname ?? ""}
-              width={30}
-              height={30}
-              className="rounded-full object-cover flex-shrink-0"
-            />
-          ) : (
-            <div className="w-[30px] h-[30px] rounded-full bg-gray-200 flex items-center justify-center text-gray-500 text-xs font-medium flex-shrink-0">
-              {host?.nickname?.[0] ?? "?"}
-            </div>
-          )}
-          <div className="flex flex-col min-w-0">
-            <p className="text-base text-gray-900 font-semibold line-clamp-1">{title}</p>
-            <p className="text-gray-500" style={{ fontSize: "13px" }}>
-              {levelLabel} · {formatDate(datetime)} · {genreLabel}
-            </p>
+        {/* 제목/정보 */}
+        <div className="flex items-start gap-2 px-3 pt-2 pb-3">
+          <div className="flex flex-col min-w-0 flex-1">
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="text-left w-full"
+            >
+              <p className="text-base text-gray-900 font-semibold line-clamp-1">{title}</p>
+              <p className="text-gray-500" style={{ fontSize: "13px" }}>
+                {levelLabel} · {formatDate(datetime)}{!expanded && <span className="text-gray-400"> ...더보기</span>}
+              </p>
+            </button>
+            {expanded && description && (
+              <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">{description}</p>
+            )}
           </div>
         </div>
       </div>
-    );
-  }
-
-  // list mode
-  return (
-    <Link href={`/classes/${id}`} className="card flex items-start gap-3 p-3">
-      <div className="flex-shrink-0 mt-0.5">
-        {host?.profile_image_url ? (
-          <Image
-            src={host.profile_image_url}
-            alt={host.nickname}
-            width={40}
-            height={40}
-            className="rounded-full object-cover"
-          />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 text-sm font-medium">
-            {host?.nickname?.[0] ?? "?"}
-          </div>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-          <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${chipCls}`}>
-            {genreLabel}
-          </span>
-          <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${statusInfo.cls}`}>
-            {statusInfo.label}
-          </span>
-          {is_modified && (
-            <span className="text-xs text-orange-500 font-medium">수정됨</span>
-          )}
-        </div>
-        <p className="font-semibold text-sm text-gray-900 line-clamp-1">{title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {levelLabel} · {formatDate(datetime)}
-        </p>
-        <p className="text-xs text-gray-400 mt-0.5">{region}</p>
-      </div>
-    </Link>
   );
 }

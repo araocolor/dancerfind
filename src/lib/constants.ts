@@ -16,11 +16,18 @@ export const REGIONS_WITH_ALL = ["전체", ...REGIONS] as const;
 export const GENRES = [
   { value: "salsa", label: "살사" },
   { value: "bachata", label: "바차타" },
-  { value: "festival", label: "페스티벌" },
-  { value: "event", label: "파티" },
+  { value: "kizomba", label: "키좀바" },
+  { value: "zouk", label: "쥬크" },
+  { value: "other", label: "기타" },
+] as const;
+
+export const CATEGORIES = [
+  { value: "event", label: "이벤트" },
   { value: "regular", label: "정규강습" },
   { value: "practice", label: "연습모임" },
-  { value: "other", label: "기타" },
+  { value: "training", label: "1:1트레이닝" },
+  { value: "choreography", label: "안무반" },
+  { value: "festival", label: "페스티발" },
 ] as const;
 
 export const LEVELS = [

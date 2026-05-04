@@ -109,7 +109,7 @@ export default async function UserProfilePage({
         ) : (
           <div className="flex flex-col gap-3">
             {recruitingClasses.map((cls) => (
-              <ClassCard key={cls.id} classData={cls} viewMode="list" />
+              <ClassCard key={cls.id} classData={cls} />
             ))}
           </div>
         )}

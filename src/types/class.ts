@@ -1,17 +1,25 @@
 export type ClassStatus = "recruiting" | "closed" | "cancelled";
 export type ClassType = "group" | "private";
 export type ContentType = "class" | "event";
-export type DanceGenre = "salsa" | "bachata" | "festival" | "event" | "regular" | "practice" | "other";
+export type DanceGenre = "salsa" | "bachata" | "kizomba" | "zouk" | "other";
+export type ClassCategory = "event" | "regular" | "practice" | "training" | "choreography" | "festival";
 export type ClassLevel = "beginner" | "elementary" | "intermediate" | "advanced" | "all";
 
 export const DANCE_GENRE_LABELS: Record<DanceGenre, string> = {
   salsa: "살사",
   bachata: "바차타",
-  festival: "페스티벌",
-  event: "파티",
+  kizomba: "키좀바",
+  zouk: "쥬크",
+  other: "기타",
+};
+
+export const CLASS_CATEGORY_LABELS: Record<ClassCategory, string> = {
+  event: "이벤트",
   regular: "정규강습",
   practice: "연습모임",
-  other: "기타",
+  training: "1:1트레이닝",
+  choreography: "안무반",
+  festival: "페스티발",
 };
 
 export const CLASS_LEVEL_LABELS: Record<ClassLevel, string> = {
@@ -48,6 +56,7 @@ export interface DanceClass {
   price: number;
   images: ClassImage[];
   region: string;
+  category: ClassCategory | null;
   is_modified: boolean;
   view_count: number;
   created_at: string;
