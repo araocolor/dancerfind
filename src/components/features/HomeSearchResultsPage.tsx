@@ -94,7 +94,7 @@ export default function HomeSearchResultsPage() {
 
   return (
     <div className="max-w-xl mx-auto bg-white">
-      <div className="flex flex-col divide-y divide-[#e9eaec] pb-6">
+      <div className="flex flex-col pb-6">
         {orderedTopTen.map((c, idx) => (
           <ClassCard key={`${c.id}-${idx}`} classData={c} />
         ))}

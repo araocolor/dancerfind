@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { DanceClass, DANCE_GENRE_LABELS, CLASS_LEVEL_LABELS } from "@/types/class";
+import CommentSheet from "@/components/class/CommentSheet";
 
 const LIKES_CACHE_KEY = "loco_liked_posts";
 
@@ -62,6 +63,7 @@ export default function ClassCard({ classData }: ClassCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
   const [userExpanded, setUserExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
   const [heartVisible, setHeartVisible] = useState(false);
@@ -140,6 +142,7 @@ export default function ClassCard({ classData }: ClassCardProps) {
   const chipCls = GENRE_CHIP[primaryGenre] ?? GENRE_CHIP.other;
 
   return (
+    <>
       <div className="bg-white">
         {/* 개설자 아이콘 - 상단 */}
         <div className="flex items-center gap-2 px-3 pt-3 pb-2">
@@ -325,9 +328,11 @@ export default function ClassCard({ classData }: ClassCardProps) {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             {/* 댓글 */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <button onClick={() => setCommentOpen(true)}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </button>
             {/* 메세지 */}
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
               <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -347,8 +352,8 @@ export default function ClassCard({ classData }: ClassCardProps) {
               className="text-left w-full"
             >
               <p className="text-base text-gray-900 font-semibold line-clamp-1">{title}</p>
-              <p className="text-gray-500" style={{ fontSize: "13px" }}>
-                {levelLabel} · {formatDate(datetime)}{!expanded && <span className="text-gray-400"> ...더보기</span>}
+              <p className="text-gray-500" style={{ fontSize: "14px" }}>
+                {levelLabel} · {formatDate(datetime)}{!expanded && <span className="text-gray-500 font-bold inline-flex items-center gap-0.5" style={{ fontSize: "14px" }}> ...더 보기 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>}
               </p>
             </button>
             {expanded && description && (
@@ -357,5 +362,7 @@ export default function ClassCard({ classData }: ClassCardProps) {
           </div>
         </div>
       </div>
+      <CommentSheet open={commentOpen} onClose={() => setCommentOpen(false)} classId={id} />
+    </>
   );
 }
