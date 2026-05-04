@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { GENRES, LEVELS, CLASS_TYPES, REGIONS } from "@/lib/constants";
+import { GENRES, LEVELS, REGIONS } from "@/lib/constants";
 import type { ClassImage, DanceClass } from "@/types/class";
 
 declare global {
@@ -395,10 +395,10 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="max-w-xl mx-auto pb-16">
+      <form onSubmit={handleSubmit} className="max-w-xl mx-auto pb-16 bg-[#f4f4f4] min-h-screen">
 
         {/* 섹션 1 — 이미지 */}
-        <div className="px-4 py-5 border-b border-[#e9eaec]">
+        <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">이미지</p>
           {totalImages > 0 && (
             <div className="flex gap-3 mb-3 flex-wrap justify-center">
@@ -427,7 +427,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         </div>
 
         {/* 섹션 2 — 장르 */}
-        <div className="px-4 py-5 border-b border-[#e9eaec]">
+        <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">장르 (최대 3개)</p>
           <div className="flex gap-2 flex-wrap">
             {GENRES.map((g) => (
@@ -461,7 +461,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         </div>
 
         {/* 섹션 3 — 제목 + 본문 */}
-        <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
+        <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">제목 / 본문</p>
             <div className="flex gap-1">
@@ -498,7 +498,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         </div>
 
         {/* 섹션 4 — 지역 / 레벨 / 비용 */}
-        <div className="px-4 py-5 border-b border-[#e9eaec]">
+        <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">지역 / 레벨 / 비용</p>
           <div className="grid grid-cols-3 gap-2">
             <div>
@@ -532,7 +532,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
         </div>
 
         {/* 섹션 5+6 — 장소 상세 */}
-        <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
+        <div className="mx-4 mt-3 bg-white rounded-2xl px-4 py-5 space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">상세 정보</p>
             <button
@@ -545,18 +545,6 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
           </div>
           {showDetail && (
             <>
-              {/* 구분 */}
-              <div>
-                <label className="field-label">구분 *</label>
-                <div className="flex gap-2">
-                  {CLASS_TYPES.map((t) => (
-                    <button key={t.value} type="button" className={`chip ${form.class_type === t.value ? "active" : ""}`} onClick={() => set("class_type", t.value)}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* 일시 */}
               <div>
                 <label className="field-label">일시 *</label>
@@ -578,12 +566,6 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
                 </div>
               </div>
 
-              {/* 정원 */}
-              <div>
-                <label className="field-label">정원 *</label>
-                <input type="number" className="input-field" placeholder="최대 인원 수" value={form.capacity} onChange={(e) => set("capacity", e.target.value)} min={1} />
-              </div>
-
               {/* 연락처 */}
               <div>
                 <label className="field-label">연락처 *</label>
@@ -593,7 +575,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
           )}
         </div>
 
-        <div className="px-4 pt-5">
+        <div className="mx-4 mt-3">
           {error && <p className="error-text mb-3">{error}</p>}
           <button type="submit" className="btn-primary" disabled={submitting}>
             {submitting ? "저장 중..." : classId ? "수정 완료" : "클래스 개설"}

@@ -4,11 +4,13 @@ import HeaderBackCircleButton from "@/components/layout/HeaderBackCircleButton";
 interface ClassHeaderProps {
   backExitAnimationClass?: string;
   backExitDelayMs?: number;
+  showSearch?: boolean;
 }
 
 export default function ClassHeader({
   backExitAnimationClass,
   backExitDelayMs,
+  showSearch = true,
 }: ClassHeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] h-14 px-4 relative flex items-center">
@@ -22,7 +24,7 @@ export default function ClassHeader({
         LOCO
       </div>
       <div className="ml-auto w-10 flex items-center justify-end">
-        <SearchNavButton isLoggedIn={false} />
+        {showSearch && <SearchNavButton isLoggedIn={false} />}
       </div>
     </header>
   );
