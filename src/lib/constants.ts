@@ -18,7 +18,9 @@ export const GENRES = [
   { value: "salsa", label: "살사" },
   { value: "bachata", label: "바차타" },
   { value: "festival", label: "페스티벌" },
-  { value: "event", label: "이벤트" },
+  { value: "event", label: "파티" },
+  { value: "regular", label: "정규강습" },
+  { value: "practice", label: "연습모임" },
   { value: "other", label: "기타" },
 ] as const;
 
@@ -39,4 +41,18 @@ export const CLASS_STATUSES = [
 export const CLASS_TYPES = [
   { value: "group", label: "그룹" },
   { value: "private", label: "1:1" },
+] as const;
+
+export const VENUES = [
+  { value: "전체", label: "전체" },
+  { value: "gang", label: "강턴" },
+  { value: "hong", label: "홍턴" },
+  { value: "latin", label: "라틴" },
+  { value: "lueda", label: "루에다" },
+  { value: "mambo", label: "맘보바" },
+  { value: "lalala", label: "라라라" },
+  { value: "havana", label: "하바나" },
+  { value: "buenavista", label: "부에나비스타" },
+  { value: "mayan", label: "마얀" },
+  { value: "sns", label: "대전 SNS" },
 ] as const;

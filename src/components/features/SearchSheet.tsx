@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { REGIONS_WITH_ALL, GENRES } from "@/lib/constants";
+import { REGIONS_WITH_ALL, GENRES, VENUES } from "@/lib/constants";
 import {
   DEFAULT_SEARCH_OPTIONS,
   SEARCH_DEFAULTS_STORAGE_KEY,
@@ -16,11 +16,6 @@ const STATUS_OPTIONS = [
   { value: "closed", label: "마감" },
 ];
 
-const CLASS_TYPE_OPTIONS = [
-  { value: "전체", label: "전체" },
-  { value: "group", label: "그룹" },
-  { value: "private", label: "1:1" },
-];
 
 function readStoredSearchOptions(): SearchOptions {
   if (typeof window === "undefined") return DEFAULT_SEARCH_OPTIONS;
@@ -85,14 +80,24 @@ export default function SearchSheet() {
     router.push(`/?${qs}`);
   }
 
-  function set(key: "region" | "status" | "class_type", value: string) {
+  function set(key: "region" | "status" | "venue", value: string) {
     setSaveDefault(true);
-    setOpts((prev) => ({ ...prev, [key]: value }));
+
+    if (key === "region" && value === "전체") {
+      setOpts((prev) => ({ ...prev, region: "전체", venue: "전체" }));
+    } else if (key === "region" && value !== "전체") {
+      setOpts((prev) => ({ ...prev, region: value, venue: "전체" }));
+    } else if (key === "venue" && value !== "전체") {
+      setOpts((prev) => ({ ...prev, venue: value, region: "없음" }));
+    } else {
+      setOpts((prev) => ({ ...prev, [key]: value }));
+    }
 
     if (key === "region" && pathname === "/") {
       const params = new URLSearchParams(searchParams.toString());
       if (value === "전체") params.delete("region");
       else params.set("region", value);
+      params.delete("venue");
       params.set("search", "open");
       const next = params.toString();
       router.replace(next ? `/?${next}` : "/?search=open");
@@ -102,12 +107,10 @@ export default function SearchSheet() {
   function toggleGenre(value: string) {
     setSaveDefault(true);
     const exists = opts.genre.includes(value);
-    if (!exists && opts.genre.length >= 3) {
-      alert("장르는 최대 3개까지 선택할 수 있습니다.");
-      return;
-    }
     const nextGenres = exists
       ? opts.genre.filter((g) => g !== value)
+      : opts.genre.length >= 3
+      ? [...opts.genre.slice(1), value]
       : [...opts.genre, value];
 
     setOpts((prev) => ({ ...prev, genre: nextGenres }));
@@ -148,34 +151,35 @@ export default function SearchSheet() {
       <div className="search-slide-in search-half-panel px-4 py-6 pb-36">
         <h1 className="text-lg font-bold mb-6">클래스 검색</h1>
 
-        {/* 지역 / 클래스구분 / 모집상태 */}
+        {/* 지역 / 클래스구분 / 상태 */}
         <div className="mb-5 grid grid-cols-3 gap-2 items-end text-center">
           <div>
             <label className="field-label">지역</label>
             <div>
               <select
-                className="w-full h-11 rounded-xl border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] appearance-auto"
+                className={`w-full h-11 rounded-xl border px-3 text-sm appearance-auto font-semibold ${opts.venue === "전체" ? "bg-[#fee500] border-[#e6cf00] text-[#1d1d1f]" : "bg-white border-[#d2d2d7] text-[#1d1d1f]"}`}
                 value={opts.region}
                 onChange={(e) => set("region", e.target.value)}
               >
                 {REGIONS_WITH_ALL.map((r) => <option key={r} value={r}>{r}</option>)}
+                <option value="없음">없음</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="field-label">클래스 구분</label>
+            <label className="field-label">라틴바</label>
             <div>
               <select
-                className="w-full h-11 rounded-xl border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] appearance-auto"
-                value={opts.class_type}
-                onChange={(e) => set("class_type", e.target.value)}
+                className={`w-full h-11 rounded-xl border px-3 text-sm appearance-auto ${opts.venue !== "전체" ? "bg-[#fee500] border-[#e6cf00] text-[#1d1d1f] font-semibold" : "bg-white border-[#d2d2d7] text-[#1d1d1f]"}`}
+                value={opts.venue}
+                onChange={(e) => set("venue", e.target.value)}
               >
-                {CLASS_TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {VENUES.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="field-label">모집 상태</label>
+            <label className="field-label">상태</label>
             <div>
               <select
                 className="w-full h-11 rounded-xl border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] appearance-auto"

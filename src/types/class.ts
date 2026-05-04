@@ -1,14 +1,16 @@
 export type ClassStatus = "recruiting" | "closed" | "cancelled";
 export type ClassType = "group" | "private";
 export type ContentType = "class" | "event";
-export type DanceGenre = "salsa" | "bachata" | "festival" | "event" | "other";
+export type DanceGenre = "salsa" | "bachata" | "festival" | "event" | "regular" | "practice" | "other";
 export type ClassLevel = "beginner" | "elementary" | "intermediate" | "advanced" | "all";
 
 export const DANCE_GENRE_LABELS: Record<DanceGenre, string> = {
   salsa: "살사",
   bachata: "바차타",
   festival: "페스티벌",
-  event: "이벤트",
+  event: "파티",
+  regular: "정규강습",
+  practice: "연습모임",
   other: "기타",
 };
 
@@ -30,7 +32,7 @@ export interface DanceClass {
   id: string;
   host_id: string;
   title: string;
-  genre: DanceGenre;
+  genres: DanceGenre[];
   level: ClassLevel;
   class_type: ClassType;
   type: ContentType;

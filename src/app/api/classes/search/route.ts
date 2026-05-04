@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   if (class_type && class_type !== "전체") query = query.eq("class_type", class_type);
   if (genres.length > 0) {
     const filteredGenres = genres.filter((g) => g && g !== "전체");
-    if (filteredGenres.length > 0) query = query.in("genre", filteredGenres);
+    if (filteredGenres.length > 0) query = query.overlaps("genres", filteredGenres);
   }
   if (keyword) {
     query = query.or(`title.ilike.%${keyword}%,description.ilike.%${keyword}%`);

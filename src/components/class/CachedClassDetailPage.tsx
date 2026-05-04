@@ -114,11 +114,13 @@ export default function CachedClassDetailPage() {
 
   const host = displayClass.host ?? null;
   const images: { card_url?: string; full_url?: string }[] = displayClass.images ?? [];
-  const genreLabel =
-    DANCE_GENRE_LABELS[displayClass.genre as keyof typeof DANCE_GENRE_LABELS] ?? displayClass.genre;
+  const primaryGenre = displayClass.genres?.[0] ?? "other";
+  const genreLabel = (displayClass.genres ?? [])
+    .map((g) => DANCE_GENRE_LABELS[g as keyof typeof DANCE_GENRE_LABELS] ?? g)
+    .join(" · ");
   const levelLabel =
     CLASS_LEVEL_LABELS[displayClass.level as keyof typeof CLASS_LEVEL_LABELS] ?? displayClass.level;
-  const chipCls = GENRE_CHIP[displayClass.genre] ?? GENRE_CHIP.other;
+  const chipCls = GENRE_CHIP[primaryGenre] ?? GENRE_CHIP.other;
 
   return (
     <div

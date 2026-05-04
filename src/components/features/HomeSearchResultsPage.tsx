@@ -23,7 +23,7 @@ export default function HomeSearchResultsPage() {
       region === "전체" ? allClasses : allClasses.filter((item) => item.region === region);
     if (genres.length > 0) {
       const genreSet = new Set(genres);
-      filtered = filtered.filter((item) => genreSet.has(item.genre));
+      filtered = filtered.filter((item) => item.genres?.some((g) => genreSet.has(g)));
     }
     return filtered.slice(0, 10);
   }, [allClasses, region, genres]);

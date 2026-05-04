@@ -51,14 +51,15 @@ function formatDate(dateStr: string) {
 }
 
 export default function ClassCard({ classData, viewMode }: ClassCardProps) {
-  const { id, title, genre, level, datetime, region, status, images, host, is_modified } =
+  const { id, title, genres, level, datetime, region, status, images, host, is_modified } =
     classData;
 
+  const primaryGenre = genres?.[0] ?? "other";
   const imageUrl = images?.[0]?.card_url ?? null;
-  const genreLabel = DANCE_GENRE_LABELS[genre] ?? genre;
+  const genreLabel = genres?.map((g) => DANCE_GENRE_LABELS[g as keyof typeof DANCE_GENRE_LABELS] ?? g).join(" · ") ?? "";
   const levelLabel = CLASS_LEVEL_LABELS[level] ?? level;
   const statusInfo = STATUS_MAP[status] ?? STATUS_MAP.recruiting;
-  const chipCls = GENRE_CHIP[genre] ?? GENRE_CHIP.other;
+  const chipCls = GENRE_CHIP[primaryGenre] ?? GENRE_CHIP.other;
 
   if (viewMode === "card") {
     return (
@@ -76,10 +77,10 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
           ) : (
             <div
               className="w-full aspect-[3/4] flex items-center justify-center"
-              style={{ backgroundColor: GENRE_BG[genre] ?? GENRE_BG.other }}
+              style={{ backgroundColor: GENRE_BG[primaryGenre] ?? GENRE_BG.other }}
             >
               <span className="text-6xl opacity-30">
-                {genre === "salsa" ? "💃" : genre === "bachata" ? "🕺" : "🎵"}
+                {primaryGenre === "salsa" ? "💃" : primaryGenre === "bachata" ? "🕺" : "🎵"}
               </span>
             </div>
           )}

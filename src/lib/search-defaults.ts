@@ -5,14 +5,14 @@ export const HOME_SEARCH_CONDITION_CACHE_KEY = "loco_home_search_condition_cache
 export interface SearchOptions {
   region: string;
   status: string;
-  class_type: string;
+  venue: string;
   genre: string[];
 }
 
 export const DEFAULT_SEARCH_OPTIONS: SearchOptions = {
   region: "전체",
   status: "recruiting",
-  class_type: "전체",
+  venue: "전체",
   genre: [],
 };
 
@@ -20,7 +20,7 @@ export function buildSearchQuery(opts: SearchOptions) {
   const params = new URLSearchParams();
   if (opts.region !== "전체") params.set("region", opts.region);
   if (opts.status !== "전체") params.set("status", opts.status);
-  if (opts.class_type !== "전체") params.set("class_type", opts.class_type);
+  if (opts.venue !== "전체") params.set("venue", opts.venue);
   opts.genre.forEach((g) => params.append("genre", g));
   return params.toString();
 }

@@ -18,7 +18,7 @@ declare global {
 }
 
 interface FormState {
-  genre: string;
+  genres: string[];
   title: string;
   level: string;
   class_type: string;
@@ -36,7 +36,7 @@ interface FormState {
 }
 
 const EMPTY: FormState = {
-  genre: "",
+  genres: [],
   title: "",
   level: "",
   class_type: "group",
@@ -55,7 +55,7 @@ const EMPTY: FormState = {
 
 function toFormState(d: Partial<DanceClass>): FormState {
   return {
-    genre: d.genre ?? "",
+    genres: d.genres ?? [],
     title: d.title ?? "",
     level: d.level ?? "",
     class_type: d.class_type ?? "group",
@@ -190,7 +190,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (key === "genre" && !genreSelectedRef.current) {
+    if (key === "genres" && !genreSelectedRef.current) {
       genreSelectedRef.current = true;
       scheduleResize(newFiles);
     }
@@ -299,10 +299,10 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     e.preventDefault();
 
     const required: (keyof FormState)[] = [
-      "genre", "title", "level", "datetime", "deadline",
+      "title", "level", "datetime", "deadline",
       "location_address", "capacity", "contact", "region",
     ];
-    if (required.some((k) => !form[k])) {
+    if (required.some((k) => !form[k]) || form.genres.length === 0) {
       setError("필수 항목을 모두 입력해주세요.");
       return;
     }
@@ -336,7 +336,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
       const images = [...existingImages, ...uploaded];
 
       const payload = {
-        genre: form.genre,
+        genres: form.genres,
         title: form.title,
         level: form.level,
         class_type: form.class_type,
@@ -455,14 +455,22 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
       {/* 장르 */}
       <div>
-        <label className="field-label">장르 *</label>
+        <label className="field-label">장르 * (최대 3개)</label>
         <div className="flex gap-2 flex-wrap">
           {GENRES.map((g) => (
             <button
               key={g.value}
               type="button"
-              className={`chip ${form.genre === g.value ? "active" : ""}`}
-              onClick={() => set("genre", g.value)}
+              className={`chip ${form.genres.includes(g.value) ? "active" : ""}`}
+              onClick={() => {
+                const exists = form.genres.includes(g.value);
+                const next = exists
+                  ? form.genres.filter((v) => v !== g.value)
+                  : form.genres.length >= 3
+                  ? [...form.genres.slice(1), g.value]
+                  : [...form.genres, g.value];
+                set("genres", next);
+              }}
             >
               {g.label}
             </button>
