@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { REGIONS_WITH_ALL, GENRES } from "@/lib/constants";
 import {
@@ -22,35 +22,42 @@ const CLASS_TYPE_OPTIONS = [
   { value: "private", label: "1:1" },
 ];
 
+function readStoredSearchOptions(): SearchOptions {
+  if (typeof window === "undefined") return DEFAULT_SEARCH_OPTIONS;
+
+  const raw = sessionStorage.getItem(SEARCH_DEFAULTS_STORAGE_KEY);
+  if (!raw) return DEFAULT_SEARCH_OPTIONS;
+
+  try {
+    const parsed = JSON.parse(raw) as SearchOptions | (Omit<SearchOptions, "genre"> & { genre: string });
+    return {
+      ...parsed,
+      genre: Array.isArray(parsed.genre)
+        ? parsed.genre
+        : parsed.genre && parsed.genre !== "전체"
+        ? [parsed.genre]
+        : [],
+    };
+  } catch {
+    return DEFAULT_SEARCH_OPTIONS;
+  }
+}
+
 
 export default function SearchSheet() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const isOpen = searchParams.get("search") === "open";
 
-  const [opts, setOpts] = useState<SearchOptions>(DEFAULT_SEARCH_OPTIONS);
+  const [opts, setOpts] = useState<SearchOptions>(readStoredSearchOptions);
   const [saveDefault, setSaveDefault] = useState(false);
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const raw = sessionStorage.getItem(SEARCH_DEFAULTS_STORAGE_KEY);
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as SearchOptions | (Omit<SearchOptions, "genre"> & { genre: string });
-        setOpts({
-          ...parsed,
-          genre: Array.isArray(parsed.genre)
-            ? parsed.genre
-            : parsed.genre && parsed.genre !== "전체"
-            ? [parsed.genre]
-            : [],
-        });
-      } catch {}
-    }
-  }, [isOpen]);
 
   function close() {
-    router.back();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
   }
 
   async function handleResetSearch() {
@@ -81,14 +88,51 @@ export default function SearchSheet() {
   function set(key: "region" | "status" | "class_type", value: string) {
     setSaveDefault(true);
     setOpts((prev) => ({ ...prev, [key]: value }));
+
+    if (key === "region" && pathname === "/") {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value === "전체") params.delete("region");
+      else params.set("region", value);
+      params.set("search", "open");
+      const next = params.toString();
+      router.replace(next ? `/?${next}` : "/?search=open");
+    }
   }
 
   function toggleGenre(value: string) {
     setSaveDefault(true);
-    setOpts((prev) => {
-      const exists = prev.genre.includes(value);
-      return { ...prev, genre: exists ? prev.genre.filter((g) => g !== value) : [...prev.genre, value] };
-    });
+    const exists = opts.genre.includes(value);
+    if (!exists && opts.genre.length >= 3) {
+      alert("장르는 최대 3개까지 선택할 수 있습니다.");
+      return;
+    }
+    const nextGenres = exists
+      ? opts.genre.filter((g) => g !== value)
+      : [...opts.genre, value];
+
+    setOpts((prev) => ({ ...prev, genre: nextGenres }));
+
+    if (pathname === "/") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("genre");
+      nextGenres.forEach((genre) => params.append("genre", genre));
+      params.set("search", "open");
+      const next = params.toString();
+      router.replace(next ? `/?${next}` : "/?search=open");
+    }
+  }
+
+  function selectAllGenres() {
+    setSaveDefault(true);
+    setOpts((prev) => ({ ...prev, genre: [] }));
+
+    if (pathname === "/") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("genre");
+      params.set("search", "open");
+      const next = params.toString();
+      router.replace(next ? `/?${next}` : "/?search=open");
+    }
   }
 
   if (!isOpen) return null;
@@ -108,24 +152,36 @@ export default function SearchSheet() {
         <div className="mb-5 grid grid-cols-3 gap-2 items-end text-center">
           <div>
             <label className="field-label">지역</label>
-            <div className="apple-select-wrap">
-              <select className="apple-select" value={opts.region} onChange={(e) => set("region", e.target.value)}>
+            <div>
+              <select
+                className="w-full h-11 rounded-xl border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] appearance-auto"
+                value={opts.region}
+                onChange={(e) => set("region", e.target.value)}
+              >
                 {REGIONS_WITH_ALL.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
           </div>
           <div>
             <label className="field-label">클래스 구분</label>
-            <div className="apple-select-wrap">
-              <select className="apple-select" value={opts.class_type} onChange={(e) => set("class_type", e.target.value)}>
+            <div>
+              <select
+                className="w-full h-11 rounded-xl border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] appearance-auto"
+                value={opts.class_type}
+                onChange={(e) => set("class_type", e.target.value)}
+              >
                 {CLASS_TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
           </div>
           <div>
             <label className="field-label">모집 상태</label>
-            <div className="apple-select-wrap">
-              <select className="apple-select" value={opts.status} onChange={(e) => set("status", e.target.value)}>
+            <div>
+              <select
+                className="w-full h-11 rounded-xl border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] appearance-auto"
+                value={opts.status}
+                onChange={(e) => set("status", e.target.value)}
+              >
                 {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
@@ -138,7 +194,7 @@ export default function SearchSheet() {
           <div className="flex gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => { setSaveDefault(true); setOpts((prev) => ({ ...prev, genre: [] })); }}
+              onClick={selectAllGenres}
               className={`chip ${opts.genre.length === 0 ? "active" : ""}`}
             >
               전체
