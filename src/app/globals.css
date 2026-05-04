@@ -200,7 +200,7 @@ body {
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: none;
     opacity: 1;
   }
 }
@@ -297,6 +297,31 @@ body {
   stroke-dasharray: 26;
   stroke-dashoffset: 26;
   animation: modal-check-draw 420ms ease-out forwards;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.dropdown-option {
+  background: #ffffff;
+}
+
+.dropdown-option[data-selected="true"] {
+  background: #fff8cc;
+}
+
+.dropdown-option:hover {
+  background: #edf0f4;
+}
+
+.dropdown-option[data-selected="true"]:hover {
+  background: #ffe78a;
 }
 
 @media (prefers-reduced-motion: reduce) {

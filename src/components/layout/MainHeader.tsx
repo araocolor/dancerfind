@@ -1,5 +1,5 @@
-import SearchNavButton from "@/components/layout/SearchNavButton";
 import Link from "next/link";
+import SearchNavButton from "@/components/layout/SearchNavButton";
 
 export default function MainHeader() {
   return (

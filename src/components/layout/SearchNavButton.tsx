@@ -1,15 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 export default function SearchNavButton({ isLoggedIn }: { isLoggedIn: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   void isLoggedIn;
 
   function handleClick() {
-    router.push(`${pathname}?search=open`);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("search", "open");
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   return (

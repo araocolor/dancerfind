@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ClassCard, { ClassWithHost } from "@/components/class/ClassCard";
 
-const HOME_RESULTS_CACHE_KEY = "loco_home_results_cache_v3";
+const HOME_RESULTS_CACHE_KEY = "loco_home_results_cache_v3:all";
 
 interface CachedHomeResult {
   data: ClassWithHost[];
@@ -11,10 +12,21 @@ interface CachedHomeResult {
 }
 
 export default function HomeSearchResultsPage() {
-  const [classes, setClasses] = useState<ClassWithHost[]>([]);
+  const searchParams = useSearchParams();
+  const region = searchParams.get("region") ?? "전체";
+  const genres = searchParams.getAll("genre");
   const [loading, setLoading] = useState(true);
+  const [allClasses, setAllClasses] = useState<ClassWithHost[]>([]);
   const warmedImageUrlsRef = useRef<Set<string>>(new Set());
-  const orderedTopTen = classes.slice(0, 10);
+  const orderedTopTen = useMemo(() => {
+    let filtered =
+      region === "전체" ? allClasses : allClasses.filter((item) => item.region === region);
+    if (genres.length > 0) {
+      const genreSet = new Set(genres);
+      filtered = filtered.filter((item) => genreSet.has(item.genre));
+    }
+    return filtered.slice(0, 10);
+  }, [allClasses, region, genres]);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,9 +36,9 @@ export default function HomeSearchResultsPage() {
       if (cachedRaw) {
         try {
           const cached = JSON.parse(cachedRaw) as CachedHomeResult;
-          const cachedList = (cached.data ?? []).slice(0, 10);
+          const cachedList = (cached.data ?? []);
           if (!cancelled) {
-            setClasses(cachedList);
+            setAllClasses(cachedList);
             setLoading(false);
           }
           warmImages(cachedList);
@@ -42,10 +54,10 @@ export default function HomeSearchResultsPage() {
           return;
         }
 
-        const incoming = ((json.data ?? []) as ClassWithHost[]).slice(0, 10);
+        const incoming = ((json.data ?? []) as ClassWithHost[]);
 
         if (!cancelled) {
-          setClasses(incoming);
+          setAllClasses(incoming);
           setLoading(false);
         }
 
@@ -88,7 +100,7 @@ export default function HomeSearchResultsPage() {
         ))}
       </div>
 
-      {!loading && classes.length === 0 && (
+      {!loading && orderedTopTen.length === 0 && (
         <div className="text-center py-16 text-gray-400 text-sm px-4">
           <p className="text-3xl mb-3">🔍</p>
           <p>표시할 클래스가 없습니다.</p>
