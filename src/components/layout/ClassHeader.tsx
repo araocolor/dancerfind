@@ -1,17 +1,22 @@
 import SearchNavButton from "@/components/layout/SearchNavButton";
-import Link from "next/link";
+import HeaderBackCircleButton from "@/components/layout/HeaderBackCircleButton";
 
-export default function MainHeader() {
+interface ClassHeaderProps {
+  backExitAnimationClass?: string;
+  backExitDelayMs?: number;
+}
+
+export default function ClassHeader({
+  backExitAnimationClass,
+  backExitDelayMs,
+}: ClassHeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#e5e7eb] h-14 px-4 relative flex items-center">
       <div className="w-10 flex items-center justify-start">
-        <Link
-          href="/classes/new?from=main-plus"
-          aria-label="추가"
-          className="w-10 h-10 -ml-1 flex items-center justify-center text-[20px] font-bold leading-none text-gray-900"
-        >
-          +
-        </Link>
+        <HeaderBackCircleButton
+          exitAnimationClass={backExitAnimationClass}
+          exitDelayMs={backExitDelayMs}
+        />
       </div>
       <div className="absolute left-1/2 -translate-x-1/2 font-bold text-xl text-[#FEE500] leading-none">
         LOCO

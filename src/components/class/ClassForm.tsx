@@ -79,6 +79,17 @@ interface ClassFormProps {
   userRole: "member" | "pro" | "admin";
 }
 
+type SubmitModalState =
+  | null
+  | { kind: "success"; newClassId: string }
+  | { kind: "failure"; message: string };
+
+function toCreateFailureMessage(message: string) {
+  if (message.includes("classes_genre_check")) return "장르를 선택해주세요.";
+  if (message.includes("violates check constraint")) return "입력한 항목을 다시 확인해주세요.";
+  return message;
+}
+
 async function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -136,6 +147,7 @@ async function resizeImageToWidth(file: File, width: number): Promise<File> {
 
 export default function ClassForm({ initialData, classId, userRole }: ClassFormProps) {
   const router = useRouter();
+  const isCreateMode = !classId;
   const [form, setForm] = useState<FormState>(
     initialData ? toFormState(initialData) : EMPTY
   );
@@ -147,6 +159,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   const [previews, setPreviews] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [submitModal, setSubmitModal] = useState<SubmitModalState>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // daum postcode 스크립트 로드
@@ -325,10 +338,20 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "오류가 발생했습니다.");
 
-      router.push(`/classes/${classId ?? data.id}`);
+      if (isCreateMode) {
+        setSubmitModal({ kind: "success", newClassId: data.id as string });
+        return;
+      }
+
+      router.push(`/classes/${classId}`);
       router.refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "오류가 발생했습니다.");
+      const message = err instanceof Error ? err.message : "오류가 발생했습니다.";
+      if (isCreateMode) {
+        setSubmitModal({ kind: "failure", message: toCreateFailureMessage(message) });
+      } else {
+        setError(message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -338,7 +361,8 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   const totalImages = existingImages.length + newFiles.length;
 
   return (
-    <form onSubmit={handleSubmit} className="px-4 py-6 max-w-xl mx-auto space-y-5 pb-10">
+    <>
+      <form onSubmit={handleSubmit} className="px-4 py-6 max-w-xl mx-auto space-y-5 pb-10">
       {/* 장르 */}
       <div>
         <label className="field-label">장르 *</label>
@@ -597,9 +621,88 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
       {error && <p className="error-text">{error}</p>}
 
-      <button type="submit" className="btn-primary" disabled={submitting}>
-        {submitting ? "저장 중..." : classId ? "수정 완료" : "클래스 개설"}
-      </button>
-    </form>
+        <button type="submit" className="btn-primary" disabled={submitting}>
+          {submitting ? "저장 중..." : classId ? "수정 완료" : "클래스 개설"}
+        </button>
+      </form>
+
+      {submitModal?.kind === "success" && (
+        <div className="fixed inset-0 z-[120] bg-black/35 flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="px-6 pt-6 pb-5 flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#16a34a"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path className="modal-check-path" d="m5 12 5 5 9-10" />
+                </svg>
+              </div>
+              <p className="text-base font-semibold text-gray-900">클래스 등록이 완료되었습니다.</p>
+            </div>
+            <div className="grid grid-cols-2 border-t border-gray-200">
+              <button
+                type="button"
+                className="h-12 text-sm font-semibold text-gray-700 border-r border-gray-200"
+                onClick={() => {
+                  setSubmitModal(null);
+                  router.push("/");
+                  router.refresh();
+                }}
+              >
+                전체목록
+              </button>
+              <button
+                type="button"
+                className="h-12 text-sm font-semibold text-[#111111]"
+                onClick={() => {
+                  if (submitModal?.kind !== "success") return;
+                  const id = submitModal.newClassId;
+                  setSubmitModal(null);
+                  router.push(`/classes/${id}`);
+                  router.refresh();
+                }}
+              >
+                상세확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {submitModal?.kind === "failure" && (
+        <div className="fixed inset-0 z-[120] bg-black/35 flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="px-6 pt-6 pb-5 flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-3">
+                <span className="text-red-500 text-2xl font-bold leading-none">!</span>
+              </div>
+              <p className="text-base font-semibold text-gray-900 mb-1">등록에 실패했습니다.</p>
+              <p className="text-sm text-gray-500">{submitModal.message}</p>
+            </div>
+            <div className="border-t border-gray-200">
+              <button
+                type="button"
+                className="w-full h-12 text-sm font-semibold text-[#111111]"
+                onClick={() => {
+                  setSubmitModal(null);
+                  router.push("/classes/new");
+                  router.refresh();
+                }}
+              >
+                만들기 페이지로 이동
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

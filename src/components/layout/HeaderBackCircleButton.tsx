@@ -2,14 +2,40 @@
 
 import { useRouter } from "next/navigation";
 
-export default function HeaderBackCircleButton() {
+interface HeaderBackCircleButtonProps {
+  exitAnimationClass?: string;
+  exitDelayMs?: number;
+}
+
+export default function HeaderBackCircleButton({
+  exitAnimationClass,
+  exitDelayMs = 200,
+}: HeaderBackCircleButtonProps) {
   const router = useRouter();
+
+  function handleBack() {
+    if (!exitAnimationClass) {
+      router.back();
+      return;
+    }
+
+    const shell = document.querySelector("[data-page-shell]");
+    if (!shell) {
+      router.back();
+      return;
+    }
+
+    shell.classList.add(exitAnimationClass);
+    window.setTimeout(() => {
+      router.back();
+    }, exitDelayMs);
+  }
 
   return (
     <button
       type="button"
       aria-label="뒤로 가기"
-      onClick={() => router.back()}
+      onClick={handleBack}
       className="w-10 h-10 -ml-1 flex items-center justify-center text-gray-500"
     >
       <svg

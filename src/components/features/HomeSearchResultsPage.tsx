@@ -14,6 +14,7 @@ export default function HomeSearchResultsPage() {
   const [classes, setClasses] = useState<ClassWithHost[]>([]);
   const [loading, setLoading] = useState(true);
   const warmedImageUrlsRef = useRef<Set<string>>(new Set());
+  const orderedTopTen = classes.slice(0, 10);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,8 +83,8 @@ export default function HomeSearchResultsPage() {
   return (
     <div className="max-w-xl mx-auto bg-white">
       <div className="flex flex-col divide-y divide-[#e9eaec] pb-6">
-        {classes.map((c) => (
-          <ClassCard key={c.id} classData={c} viewMode="card" />
+        {orderedTopTen.map((c, idx) => (
+          <ClassCard key={`${c.id}-${idx}`} classData={c} viewMode="card" />
         ))}
       </div>
 

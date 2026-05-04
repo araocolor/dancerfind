@@ -55,6 +55,12 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
+    if (error.message.includes("violates check constraint")) {
+      return NextResponse.json(
+        { error: "입력한 항목을 다시 확인해주세요." },
+        { status: 400 }
+      );
+    }
     if (error.message.includes("classes_level_check")) {
       return NextResponse.json(
         { error: "레벨 값이 올바르지 않습니다. (입문/초급/중급/고급/올레벨)" },

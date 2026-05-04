@@ -51,7 +51,7 @@ CREATE TABLE classes (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   host_id          UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title            TEXT        NOT NULL,
-  genre            TEXT        NOT NULL CHECK (genre IN ('salsa', 'bachata', 'festival', 'event', 'other')),
+  genre            TEXT        NOT NULL,
   level            TEXT        NOT NULL CHECK (level IN ('beginner', 'elementary', 'intermediate', 'advanced', 'all')),
   class_type       TEXT        NOT NULL DEFAULT 'group'
                                CHECK (class_type IN ('group', 'private')),
