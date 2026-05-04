@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { DanceClass, DANCE_GENRE_LABELS, CLASS_LEVEL_LABELS } from "@/types/class";
+
+const LIKES_CACHE_KEY = "loco_liked_posts";
 
 interface ClassHost {
   id: string;
@@ -56,9 +60,80 @@ export default function ClassCard({ classData }: ClassCardProps) {
   const { id, title, genres, level, datetime, region, status, images, host, is_modified, description } =
     classData;
   const [expanded, setExpanded] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [userExpanded, setUserExpanded] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [heartVisible, setHeartVisible] = useState(false);
+  const [heartLiked, setHeartLiked] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const raw = localStorage.getItem(LIKES_CACHE_KEY);
+    const likes: string[] = raw ? JSON.parse(raw) : [];
+    setLiked(likes.includes(id));
+  }, [id]);
+
+  async function handleImageClick() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    const raw = localStorage.getItem(LIKES_CACHE_KEY);
+    const likes: string[] = raw ? JSON.parse(raw) : [];
+    const isLiked = likes.includes(id);
+    const next = isLiked ? likes.filter((v) => v !== id) : [...likes, id];
+    localStorage.setItem(LIKES_CACHE_KEY, JSON.stringify(next));
+    setLiked(!isLiked);
+    setHeartLiked(!isLiked);
+    setHeartVisible(true);
+    setTimeout(() => setHeartVisible(false), 900);
+  }
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isHorizontal = useRef<boolean | null>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   const primaryGenre = genres?.[0] ?? "other";
-  const imageUrl = images?.[0]?.card_url ?? null;
+  const imageList = images ?? [];
+  const totalImages = imageList.length;
+
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el || totalImages <= 1) return;
+
+    function onTouchStart(e: TouchEvent) {
+      touchStartX.current = e.touches[0].clientX;
+      touchStartY.current = e.touches[0].clientY;
+      isHorizontal.current = null;
+    }
+    function onTouchMove(e: TouchEvent) {
+      if (isHorizontal.current === null) {
+        const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+        const dy = Math.abs(e.touches[0].clientY - touchStartY.current);
+        isHorizontal.current = dx > dy;
+      }
+      if (isHorizontal.current) e.preventDefault();
+    }
+    function onTouchEnd(e: TouchEvent) {
+      const diff = touchStartX.current - e.changedTouches[0].clientX;
+      if (isHorizontal.current) {
+        if (diff > 40) setImgIndex((i) => Math.min(i + 1, totalImages - 1));
+        if (diff < -40) setImgIndex((i) => Math.max(i - 1, 0));
+      }
+    }
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [totalImages]);
   const genreLabel = genres?.map((g) => DANCE_GENRE_LABELS[g as keyof typeof DANCE_GENRE_LABELS] ?? g).join(" · ") ?? "";
   const levelLabel = CLASS_LEVEL_LABELS[level] ?? level;
   const statusInfo = STATUS_MAP[status] ?? STATUS_MAP.recruiting;
@@ -85,42 +160,168 @@ export default function ClassCard({ classData }: ClassCardProps) {
             <span className="font-bold text-gray-900" style={{ fontSize: "15px", lineHeight: "1.1" }}>{host?.nickname ?? ""}</span>
             <span className="text-gray-400" style={{ fontSize: "13px", lineHeight: "1.1" }}>{region} | {levelLabel} | {genreLabel}</span>
           </div>
-          <button className="p-1 text-gray-400">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-            </svg>
-          </button>
+          <div className="relative">
+            <button className="p-1 text-gray-400" onClick={() => { setMenuOpen((v) => !v); setUserExpanded(false); }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => { setMenuOpen(false); setUserExpanded(false); }} />
+                <div
+                  className="absolute right-0 top-full z-50 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+                  style={{ width: 180 }}
+                >
+                  {/* 다운로드 */}
+                  <button className="flex items-center justify-between w-full px-4 py-3 text-sm text-gray-700 ">
+                    <span>다운로드</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  </button>
+                  <div className="border-t border-gray-100 mx-3" />
+                  {/* 북마크저장 */}
+                  <button className="flex items-center justify-between w-full px-4 py-3 text-sm text-gray-700 ">
+                    <span>북마크저장</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                      <polygon points="19 21 12 16 5 21 5 3 19 3"/>
+                    </svg>
+                  </button>
+                  <div className="border-t border-gray-100 mx-3" />
+                  {/* 친구신청 */}
+                  <button className="flex items-center justify-between w-full px-4 py-3 text-sm text-gray-700">
+                    <span>친구신청</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                    </svg>
+                  </button>
+                  <div className="border-t border-gray-100 mx-3" />
+                  {/* 메세지전송 */}
+                  <button className="flex items-center justify-between w-full px-4 py-3 text-sm text-gray-700">
+                    <span>메세지전송</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                      <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  </button>
+                  <div className="border-t border-gray-100 mx-3" />
+                  {/* 사용자 펼침 */}
+                  <div>
+                    <button
+                      className="flex items-center justify-between w-full px-4 py-3 text-sm text-gray-700"
+                      onClick={() => setUserExpanded((v) => !v)}
+                    >
+                      <span className="font-bold">{host?.nickname ?? "사용자"}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400" style={{ transform: userExpanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                    {userExpanded && (
+                      <div>
+                        {[
+                          { icon: "flag", label: "게시물 신고" },
+                          { icon: "slash", label: "블랙등록" },
+                        ].map(({ icon, label }, idx) => (
+                          <div key={label}>
+                            {idx > 0 && <div className="border-t border-gray-200 mx-3" />}
+                            <button className="flex items-center justify-between w-full px-4 py-2.5 text-sm text-gray-700">
+                              <span>{label}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {icon === "flag" && <><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></>}
+                                {icon === "slash" && <><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></>}
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
-        <Link href={`/classes/${id}?from=home`} className="block w-full overflow-hidden ">
-          {imageUrl ? (
-            <div style={{ maxHeight: "calc(100vw * 4 / 3)", overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
-              <Image
-                src={imageUrl}
-                alt={title}
-                width={0}
-                height={0}
-                sizes="100vw"
-                style={{ width: "100%", height: "auto" }}
-              />
+        <div ref={sliderRef} className="relative w-full overflow-hidden">
+          {totalImages > 0 ? (
+            <div className="block w-full cursor-default" onClick={handleImageClick}>
+              <div
+                style={{
+                  display: "flex",
+                  transform: `translateX(-${imgIndex * 100}%)`,
+                  transition: "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                }}
+              >
+                {imageList.map((img, i) => (
+                  <div
+                    key={i}
+                    style={{ minWidth: "100%", maxHeight: "calc(100vw * 4 / 3)", overflow: "hidden", display: "flex", alignItems: "flex-end" }}
+                  >
+                    <Image
+                      src={img.card_url}
+                      alt={title}
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      style={{ width: "100%", height: "auto" }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           ) : (
-            <div
-              className="w-full aspect-[3/4] flex items-center justify-center"
-              style={{ backgroundColor: GENRE_BG[primaryGenre] ?? GENRE_BG.other }}
-            >
-              <span className="text-6xl opacity-30">
-                {primaryGenre === "salsa" ? "💃" : primaryGenre === "bachata" ? "🕺" : "🎵"}
-              </span>
+            <div className="block w-full cursor-default">
+              <div
+                className="w-full aspect-[3/4] flex items-center justify-center"
+                style={{ backgroundColor: GENRE_BG[primaryGenre] ?? GENRE_BG.other }}
+              >
+                <span className="text-6xl opacity-30">
+                  {primaryGenre === "salsa" ? "💃" : primaryGenre === "bachata" ? "🕺" : "🎵"}
+                </span>
+              </div>
             </div>
           )}
-        </Link>
+          {totalImages > 1 && (
+            <div className="absolute top-2 right-2 bg-white/80 text-gray-900 text-xs font-medium px-2.5 py-0.5 rounded-full">
+              {imgIndex + 1}/{totalImages}
+            </div>
+          )}
+          {heartVisible && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={heartLiked ? "#ff3b5c" : "white"}
+                className="drop-shadow-lg"
+                style={{ width: 80, height: 80, animation: "heartPop 0.9s ease forwards" }}
+              >
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </div>
+          )}
+          {totalImages > 1 && (
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {imageList.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setImgIndex(i)}
+                  className="rounded-full transition-all"
+                  style={{
+                    width: i === imgIndex ? 12 : 9,
+                    height: i === imgIndex ? 12 : 9,
+                    backgroundColor: i === imgIndex ? "white" : "rgba(255,255,255,0.5)",
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* 액션 아이콘 */}
         <div className="flex items-center justify-between px-3 pt-3">
           <div className="flex items-center gap-4">
             {/* 좋아요 */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={liked ? "#ff3b5c" : "none"} stroke={liked ? "#ff3b5c" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-800">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
             {/* 댓글 */}
