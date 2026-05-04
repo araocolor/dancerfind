@@ -94,7 +94,7 @@ export default function ClassCard({ classData }: ClassCardProps) {
 
         <Link href={`/classes/${id}?from=home`} className="block w-full overflow-hidden ">
           {imageUrl ? (
-            <div style={{ maxHeight: "calc(100vw * 5 / 4)", overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
+            <div style={{ maxHeight: "calc(100vw * 4 / 3)", overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
               <Image
                 src={imageUrl}
                 alt={title}
