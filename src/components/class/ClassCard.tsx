@@ -63,25 +63,26 @@ export default function ClassCard({ classData, viewMode }: ClassCardProps) {
   if (viewMode === "card") {
     return (
       <div className="bg-white">
-        {/* 1:1 이미지 */}
-        <Link
-          href={`/classes/${id}?from=home`}
-          className="block aspect-square w-full overflow-hidden"
-        >
-          <div
-            className="w-full h-full flex items-center justify-center bg-cover bg-center"
-            style={
-              imageUrl
-                ? { backgroundImage: `url(${imageUrl})` }
-                : { backgroundColor: GENRE_BG[genre] ?? GENRE_BG.other }
-            }
-          >
-            {!imageUrl && (
+        <Link href={`/classes/${id}?from=home`} className="block w-full overflow-hidden">
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={title}
+              width={0}
+              height={0}
+              sizes="100vw"
+              style={{ width: "100%", height: "auto" }}
+            />
+          ) : (
+            <div
+              className="w-full aspect-[3/4] flex items-center justify-center"
+              style={{ backgroundColor: GENRE_BG[genre] ?? GENRE_BG.other }}
+            >
               <span className="text-6xl opacity-30">
                 {genre === "salsa" ? "💃" : genre === "bachata" ? "🕺" : "🎵"}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </Link>
 
         {/* 액션 아이콘 */}

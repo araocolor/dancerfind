@@ -161,6 +161,8 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   const [error, setError] = useState("");
   const [submitModal, setSubmitModal] = useState<SubmitModalState>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const preResizeRef = useRef<Map<File, Promise<{ icon: File; card: File; full: File }>>>(new Map());
+  const genreSelectedRef = useRef(false);
 
   // daum postcode 스크립트 로드
   useEffect(() => {
@@ -171,8 +173,27 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     document.head.appendChild(s);
   }, []);
 
+  function scheduleResize(files: File[]) {
+    for (const file of files) {
+      if (!preResizeRef.current.has(file)) {
+        preResizeRef.current.set(
+          file,
+          Promise.all([
+            resizeImageToWidth(file, 200),
+            resizeImageToWidth(file, 600),
+            resizeImageToWidth(file, 1024),
+          ]).then(([icon, card, full]) => ({ icon, card, full }))
+        );
+      }
+    }
+  }
+
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === "genre" && !genreSelectedRef.current) {
+      genreSelectedRef.current = true;
+      scheduleResize(newFiles);
+    }
   }
 
   function openAddressSearch() {
@@ -207,6 +228,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     const picked = files.slice(0, remaining);
     setNewFiles((p) => [...p, ...picked]);
     setPreviews((p) => [...p, ...picked.map((f) => URL.createObjectURL(f))]);
+    if (genreSelectedRef.current) scheduleResize(picked);
     e.target.value = "";
   }
 
@@ -216,6 +238,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   }
 
   function removeNew(i: number) {
+    preResizeRef.current.delete(newFiles[i]);
     URL.revokeObjectURL(previews[i]);
     setNewFiles((p) => p.filter((_, idx) => idx !== i));
     setPreviews((p) => p.filter((_, idx) => idx !== i));
@@ -242,15 +265,18 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
     for (const file of files) {
       const base = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}`;
       try {
-        const [icon, card, full] = await Promise.all([
-          resizeImageToWidth(file, 200),
-          resizeImageToWidth(file, 600),
-          resizeImageToWidth(file, 1024),
-        ]);
+        const pending = preResizeRef.current.get(file);
+        const { icon, card, full } = pending
+          ? await pending
+          : {
+              icon: await resizeImageToWidth(file, 200),
+              card: await resizeImageToWidth(file, 600),
+              full: await resizeImageToWidth(file, 1024),
+            };
         const [iconUrl, cardUrl, fullUrl] = await Promise.all([
-          uploadViaApi(icon as File, `${base}-icon.webp`),
-          uploadViaApi(card as File, `${base}-card.webp`),
-          uploadViaApi(full as File, `${base}-full.webp`),
+          uploadViaApi(icon, `${base}-icon.webp`),
+          uploadViaApi(card, `${base}-card.webp`),
+          uploadViaApi(full, `${base}-full.webp`),
         ]);
         result.push({
           icon_url: iconUrl,
@@ -363,6 +389,70 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   return (
     <>
       <form onSubmit={handleSubmit} className="px-4 py-6 max-w-xl mx-auto space-y-5 pb-10">
+      {/* 이미지 */}
+      <div>
+        <label className="field-label">이미지 (최대 5장)</label>
+        {totalImages > 0 && (
+          <div className="flex gap-3 mb-3 flex-wrap justify-center">
+            {existingImages.map((img, i) => (
+              <div key={`e-${i}`} className="relative">
+                <Image
+                  src={img.card_url}
+                  alt=""
+                  width={100}
+                  height={0}
+                  style={{ width: 100, height: "auto" }}
+                  className="rounded-[10px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeExisting(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            {previews.map((url, i) => (
+              <div key={`n-${i}`} className="relative">
+                <img
+                  src={url}
+                  alt=""
+                  style={{ width: 100, height: "auto" }}
+                  className="rounded-[10px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeNew(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex justify-center">
+          {totalImages < 5 && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="btn-outline text-sm py-2 px-6 w-auto"
+            >
+              + 이미지 추가&nbsp;&nbsp;{totalImages}/5
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
+
       {/* 장르 */}
       <div>
         <label className="field-label">장르 *</label>
@@ -556,67 +646,6 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
           onChange={(e) => set("description", e.target.value)}
           rows={5}
         />
-      </div>
-
-      {/* 이미지 */}
-      <div>
-        <label className="field-label">이미지 (최대 5장)</label>
-        {totalImages > 0 && (
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {existingImages.map((img, i) => (
-              <div key={`e-${i}`} className="relative">
-                <Image
-                  src={img.card_url}
-                  alt=""
-                  width={80}
-                  height={80}
-                  className="object-cover rounded-[10px]"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeExisting(i)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            {previews.map((url, i) => (
-              <div key={`n-${i}`} className="relative">
-                <img
-                  src={url}
-                  alt=""
-                  className="w-20 h-20 object-cover rounded-[10px]"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeNew(i)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        {totalImages < 5 && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="btn-outline text-sm py-2 px-6 w-auto"
-          >
-            + 이미지 추가
-          </button>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleFileChange}
-          className="hidden"
-        />
-        <p className="text-xs text-gray-400 mt-1">{totalImages}/5</p>
       </div>
 
       {error && <p className="error-text">{error}</p>}
