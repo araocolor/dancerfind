@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { REGIONS_WITH_ALL, GENRES, VENUES } from "@/lib/constants";
@@ -47,6 +47,31 @@ export default function SearchSheet() {
 
   const [opts, setOpts] = useState<SearchOptions>(readStoredSearchOptions);
   const [saveDefault, setSaveDefault] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const touchStartY = useRef(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
+  function onTouchStart(e: React.TouchEvent) {
+    touchStartY.current = e.touches[0].clientY;
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (dy > 0) setDragY(dy);
+  }
+
+  function onTouchEnd() {
+    if (dragY > 80) {
+      close();
+    } else {
+      setDragY(0);
+    }
+  }
 
   function close() {
     const params = new URLSearchParams(searchParams.toString());
@@ -148,20 +173,39 @@ export default function SearchSheet() {
         onClick={close}
         className="fixed inset-0 z-[9998]"
       />
-      <div className="search-slide-in search-half-panel px-4 py-6 pb-36">
+      <div
+        className="search-slide-in search-half-panel px-4 pb-36"
+        style={{ transform: dragY > 0 ? `translateY(${dragY}px)` : undefined, transition: dragY > 0 ? "none" : "transform 0.2s ease" }}
+      >
+        <div
+          className="flex justify-center pt-3 pb-4"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
+          <div className="w-10 h-1 rounded-full bg-[#d2d2d7]" />
+        </div>
         <h1 className="text-lg font-bold mb-6">클래스 검색</h1>
 
         {/* 지역 / 클래스구분 / 상태 */}
         <div className="mb-5 grid grid-cols-3 gap-2 items-end text-center">
           <div>
-            <label className="field-label">지역</label>
+            <label className="field-label">지역선택</label>
             <div>
               <select
-                className={`w-full h-11 rounded-xl border px-3 text-sm appearance-auto font-semibold ${opts.venue === "전체" ? "bg-[#fee500] border-[#e6cf00] text-[#1d1d1f]" : "bg-white border-[#d2d2d7] text-[#1d1d1f]"}`}
+                className={`w-full h-11 rounded-xl border px-3 text-sm appearance-auto font-semibold ${opts.venue === "전체" ? "bg-[#fee500] border-[#e6cf00] text-[#1d1d1f]" : "bg-white border-[#d2d2d7] text-gray-400"}`}
                 value={opts.region}
                 onChange={(e) => set("region", e.target.value)}
               >
-                {REGIONS_WITH_ALL.map((r) => <option key={r} value={r}>{r}</option>)}
+                <option value="경기도">경기도</option>
+                <option value="인천">인천</option>
+                <option value="서울">서울</option>
+                <option value="전체">전체</option>
+                <option value="대전">대전</option>
+                <option value="대구">대구</option>
+                <option value="광주">광주</option>
+                <option value="부산">부산</option>
+                <option value="제주">제주</option>
                 <option value="없음">없음</option>
               </select>
             </div>
@@ -241,21 +285,28 @@ export default function SearchSheet() {
 
       {/* 하단 고정 영역 */}
       <div className="fixed bottom-0 left-0 right-0 z-[10000] bg-white border-t border-[#e5e7eb] px-4 pt-3 pb-4">
-        {/* 닫기 + 검색하기 */}
-        <div className="flex gap-3">
+        {/* 검색하기 */}
+        <div className="flex gap-2 mb-2">
           <button
             type="button"
-            onClick={close}
-            className="flex-1 h-12 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm"
+            onClick={() => { close(); router.push("/classes/new"); }}
+            className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
           >
-            닫기
+            클래스등록
           </button>
           <button
             type="button"
-            onClick={handleSearch}
-            className="flex-1 h-12 rounded-xl bg-[#FEE500] text-gray-900 font-semibold text-sm"
+            onClick={() => alert("장소등록은 준비 중입니다.")}
+            className="flex-1 h-11 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm"
           >
-            검색하기
+            장소등록
+          </button>
+          <button
+            type="button"
+            onClick={close}
+            className="flex-1 h-11 rounded-xl bg-[#FEE500] text-gray-900 font-semibold text-sm"
+          >
+            확인
           </button>
         </div>
       </div>

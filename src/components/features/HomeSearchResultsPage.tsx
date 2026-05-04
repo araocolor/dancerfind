@@ -104,6 +104,12 @@ export default function HomeSearchResultsPage() {
         <div className="text-center py-16 text-gray-400 text-sm px-4">
           <p className="text-3xl mb-3">🔍</p>
           <p>표시할 클래스가 없습니다.</p>
+          <a
+            href="/"
+            className="inline-block mt-4 px-6 py-2 rounded-xl bg-[#fee500] text-gray-900 font-semibold text-sm"
+          >
+            전체 표시
+          </a>
         </div>
       )}
 

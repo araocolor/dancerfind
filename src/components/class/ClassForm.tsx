@@ -30,6 +30,7 @@ interface FormState {
   location_lng: number | null;
   capacity: string;
   price: string;
+  price_type: "free" | "paid";
   contact: string;
   description: string;
   region: string;
@@ -48,6 +49,7 @@ const EMPTY: FormState = {
   location_lng: null,
   capacity: "",
   price: "0",
+  price_type: "free",
   contact: "",
   description: "",
   region: "",
@@ -67,6 +69,7 @@ function toFormState(d: Partial<DanceClass>): FormState {
     location_lng: d.location_lng ?? null,
     capacity: d.capacity?.toString() ?? "",
     price: d.price?.toString() ?? "0",
+    price_type: d.price === 0 ? "free" : "paid",
     contact: d.contact ?? "",
     description: d.description ?? "",
     region: d.region ?? "",
@@ -163,6 +166,7 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
   const fileInputRef = useRef<HTMLInputElement>(null);
   const preResizeRef = useRef<Map<File, Promise<{ icon: File; card: File; full: File }>>>(new Map());
   const genreSelectedRef = useRef(false);
+  const [showDetail, setShowDetail] = useState(!!initialData);
 
   // daum postcode 스크립트 로드
   useEffect(() => {
@@ -388,279 +392,196 @@ export default function ClassForm({ initialData, classId, userRole }: ClassFormP
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="px-4 py-6 max-w-xl mx-auto space-y-5 pb-10">
-      {/* 이미지 */}
-      <div>
-        <label className="field-label">이미지 (최대 5장)</label>
-        {totalImages > 0 && (
-          <div className="flex gap-3 mb-3 flex-wrap justify-center">
-            {existingImages.map((img, i) => (
-              <div key={`e-${i}`} className="relative">
-                <Image
-                  src={img.card_url}
-                  alt=""
-                  width={100}
-                  height={0}
-                  style={{ width: 100, height: "auto" }}
-                  className="rounded-[10px]"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeExisting(i)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            {previews.map((url, i) => (
-              <div key={`n-${i}`} className="relative">
-                <img
-                  src={url}
-                  alt=""
-                  style={{ width: 100, height: "auto" }}
-                  className="rounded-[10px]"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeNew(i)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="flex justify-center">
-          {totalImages < 5 && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-outline text-sm py-2 px-6 w-auto"
-            >
-              + 이미지 추가&nbsp;&nbsp;{totalImages}/5
-            </button>
+      <form onSubmit={handleSubmit} className="max-w-xl mx-auto pb-16">
+
+        {/* 섹션 1 — 이미지 */}
+        <div className="px-4 py-5 border-b border-[#e9eaec]">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">이미지</p>
+          {totalImages > 0 && (
+            <div className="flex gap-3 mb-3 flex-wrap justify-center">
+              {existingImages.map((img, i) => (
+                <div key={`e-${i}`} className="relative">
+                  <Image src={img.card_url} alt="" width={100} height={0} style={{ width: 100, height: "auto" }} className="rounded-[10px]" />
+                  <button type="button" onClick={() => removeExisting(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none">×</button>
+                </div>
+              ))}
+              {previews.map((url, i) => (
+                <div key={`n-${i}`} className="relative">
+                  <img src={url} alt="" style={{ width: 100, height: "auto" }} className="rounded-[10px]" />
+                  <button type="button" onClick={() => removeNew(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-gray-700 text-white rounded-full text-xs leading-none">×</button>
+                </div>
+              ))}
+            </div>
           )}
+          <div className="flex justify-center">
+            {totalImages < 5 && (
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="btn-outline text-sm py-2 px-6 w-auto">
+                + 이미지 추가&nbsp;&nbsp;{totalImages}/5
+              </button>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleFileChange}
-          className="hidden"
-        />
-      </div>
 
-      {/* 장르 */}
-      <div>
-        <label className="field-label">장르 * (최대 3개)</label>
-        <div className="flex gap-2 flex-wrap">
-          {GENRES.map((g) => (
-            <button
-              key={g.value}
-              type="button"
-              className={`chip ${form.genres.includes(g.value) ? "active" : ""}`}
-              onClick={() => {
-                const exists = form.genres.includes(g.value);
-                const next = exists
-                  ? form.genres.filter((v) => v !== g.value)
-                  : form.genres.length >= 3
-                  ? [...form.genres.slice(1), g.value]
-                  : [...form.genres, g.value];
-                set("genres", next);
-              }}
-            >
-              {g.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 제목 */}
-      <div>
-        <label className="field-label">제목 *</label>
-        <input
-          type="text"
-          className="input-field"
-          placeholder="클래스 제목을 입력하세요"
-          value={form.title}
-          onChange={(e) => set("title", e.target.value)}
-          maxLength={100}
-        />
-      </div>
-
-      {/* 레벨 */}
-      <div>
-        <label className="field-label">레벨 *</label>
-        <div className="flex gap-2 flex-wrap">
-          {LEVELS.map((l) => (
-            <button
-              key={l.value}
-              type="button"
-              className={`chip ${form.level === l.value ? "active" : ""}`}
-              onClick={() => set("level", l.value)}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 클래스 구분 */}
-      <div>
-        <label className="field-label">구분 *</label>
-        <div className="flex gap-2">
-          {CLASS_TYPES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              className={`chip ${form.class_type === t.value ? "active" : ""}`}
-              onClick={() => set("class_type", t.value)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 종류 (pro/admin만) */}
-      {canEvent && (
-        <div>
-          <label className="field-label">종류</label>
-          <div className="flex gap-2">
-            {(["class", "event"] as const).map((v) => (
+        {/* 섹션 2 — 장르 */}
+        <div className="px-4 py-5 border-b border-[#e9eaec]">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">장르 (최대 3개)</p>
+          <div className="flex gap-2 flex-wrap">
+            {GENRES.map((g) => (
               <button
-                key={v}
+                key={g.value}
                 type="button"
-                className={`chip ${form.type === v ? "active" : ""}`}
-                onClick={() => set("type", v)}
+                className={`chip ${form.genres.includes(g.value) ? "active" : ""}`}
+                onClick={() => {
+                  const exists = form.genres.includes(g.value);
+                  const next = exists
+                    ? form.genres.filter((v) => v !== g.value)
+                    : form.genres.length >= 3
+                    ? [...form.genres.slice(1), g.value]
+                    : [...form.genres, g.value];
+                  set("genres", next);
+                }}
               >
-                {v === "class" ? "클래스" : "이벤트"}
+                {g.label}
               </button>
             ))}
           </div>
+          {canEvent && (
+            <div className="flex gap-2 mt-3">
+              {(["class", "event"] as const).map((v) => (
+                <button key={v} type="button" className={`chip ${form.type === v ? "active" : ""}`} onClick={() => set("type", v)}>
+                  {v === "class" ? "클래스" : "이벤트"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* 일시 */}
-      <div>
-        <label className="field-label">일시 *</label>
-        <input
-          type="datetime-local"
-          className="input-field"
-          value={form.datetime}
-          onChange={(e) => set("datetime", e.target.value)}
-        />
-      </div>
-
-      {/* 신청 마감일 */}
-      <div>
-        <label className="field-label">신청 마감일 *</label>
-        <input
-          type="date"
-          className="input-field"
-          value={form.deadline}
-          onChange={(e) => set("deadline", e.target.value)}
-        />
-      </div>
-
-      {/* 지역 */}
-      <div>
-        <label className="field-label">지역 *</label>
-        <select
-          className="input-field"
-          value={form.region}
-          onChange={(e) => set("region", e.target.value)}
-        >
-          <option value="">선택하세요</option>
-          {REGIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* 장소 */}
-      <div>
-        <label className="field-label">장소 *</label>
-        <div className="flex gap-2">
+        {/* 섹션 3 — 제목 + 본문 */}
+        <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">제목 / 본문</p>
           <input
             type="text"
-            className="input-field cursor-pointer"
-            placeholder="주소 검색"
-            value={form.location_address}
-            readOnly
-            onClick={openAddressSearch}
+            className="input-field"
+            placeholder="클래스 제목을 입력하세요"
+            value={form.title}
+            onChange={(e) => set("title", e.target.value)}
+            maxLength={100}
           />
-          <button
-            type="button"
-            onClick={openAddressSearch}
-            className="flex-shrink-0 px-4 py-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-[12px] whitespace-nowrap"
-          >
-            검색
+          <textarea
+            className="input-field resize-none"
+            placeholder="클래스 상세 내용을 입력하세요"
+            value={form.description}
+            onChange={(e) => set("description", e.target.value)}
+            rows={4}
+          />
+        </div>
+
+        {/* 섹션 4 — 지역 / 레벨 / 비용 */}
+        <div className="px-4 py-5 border-b border-[#e9eaec]">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">지역 / 레벨 / 비용</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="field-label">지역 *</label>
+              <select className="input-field" value={form.region} onChange={(e) => set("region", e.target.value)}>
+                <option value="">선택</option>
+                {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label">레벨 *</label>
+              <select className="input-field" value={form.level} onChange={(e) => set("level", e.target.value)}>
+                <option value="">선택</option>
+                {LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="field-label">비용 *</label>
+              <select className="input-field" value={form.price_type} onChange={(e) => { set("price_type", e.target.value as "free" | "paid"); if (e.target.value === "free") set("price", "0"); }}>
+                <option value="free">무료</option>
+                <option value="paid">유료</option>
+              </select>
+            </div>
+          </div>
+          {form.price_type === "paid" && (
+            <div className="mt-3">
+              <label className="field-label">수강료 *</label>
+              <input type="number" className="input-field" placeholder="금액 입력" value={form.price} onChange={(e) => set("price", e.target.value)} min={0} step={1000} />
+            </div>
+          )}
+        </div>
+
+        {/* 섹션 5 — 상세 입력 토글 */}
+        {!showDetail && (
+          <div className="px-4 py-5 border-b border-[#e9eaec]">
+            <button
+              type="button"
+              onClick={() => setShowDetail(true)}
+              className="w-full h-12 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm"
+            >
+              + 상세 정보 입력
+            </button>
+          </div>
+        )}
+
+        {/* 섹션 6 — 장소 상세 */}
+        {showDetail && (
+          <div className="px-4 py-5 border-b border-[#e9eaec] space-y-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">상세 정보</p>
+
+            {/* 구분 */}
+            <div>
+              <label className="field-label">구분 *</label>
+              <div className="flex gap-2">
+                {CLASS_TYPES.map((t) => (
+                  <button key={t.value} type="button" className={`chip ${form.class_type === t.value ? "active" : ""}`} onClick={() => set("class_type", t.value)}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 일시 */}
+            <div>
+              <label className="field-label">일시 *</label>
+              <input type="datetime-local" className="input-field" value={form.datetime} onChange={(e) => set("datetime", e.target.value)} />
+            </div>
+
+            {/* 신청 마감일 */}
+            <div>
+              <label className="field-label">신청 마감일 *</label>
+              <input type="date" className="input-field" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
+            </div>
+
+            {/* 장소 */}
+            <div>
+              <label className="field-label">장소 *</label>
+              <div className="flex gap-2">
+                <input type="text" className="input-field cursor-pointer" placeholder="주소 검색" value={form.location_address} readOnly onClick={openAddressSearch} />
+                <button type="button" onClick={openAddressSearch} className="flex-shrink-0 px-4 py-3 bg-gray-100 text-gray-700 text-sm font-medium rounded-[12px] whitespace-nowrap">검색</button>
+              </div>
+            </div>
+
+            {/* 정원 */}
+            <div>
+              <label className="field-label">정원 *</label>
+              <input type="number" className="input-field" placeholder="최대 인원 수" value={form.capacity} onChange={(e) => set("capacity", e.target.value)} min={1} />
+            </div>
+
+            {/* 연락처 */}
+            <div>
+              <label className="field-label">연락처 *</label>
+              <input type="tel" className="input-field" placeholder="카카오톡 ID 또는 전화번호" value={form.contact} onChange={(e) => set("contact", e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        <div className="px-4 pt-5">
+          {error && <p className="error-text mb-3">{error}</p>}
+          <button type="submit" className="btn-primary" disabled={submitting}>
+            {submitting ? "저장 중..." : classId ? "수정 완료" : "클래스 개설"}
           </button>
         </div>
-      </div>
-
-      {/* 정원 */}
-      <div>
-        <label className="field-label">정원 *</label>
-        <input
-          type="number"
-          className="input-field"
-          placeholder="최대 인원 수"
-          value={form.capacity}
-          onChange={(e) => set("capacity", e.target.value)}
-          min={1}
-        />
-      </div>
-
-      {/* 수강료 */}
-      <div>
-        <label className="field-label">수강료 (0 = 무료)</label>
-        <input
-          type="number"
-          className="input-field"
-          placeholder="0"
-          value={form.price}
-          onChange={(e) => set("price", e.target.value)}
-          min={0}
-          step={1000}
-        />
-      </div>
-
-      {/* 연락처 */}
-      <div>
-        <label className="field-label">연락처 *</label>
-        <input
-          type="tel"
-          className="input-field"
-          placeholder="카카오톡 ID 또는 전화번호"
-          value={form.contact}
-          onChange={(e) => set("contact", e.target.value)}
-        />
-      </div>
-
-      {/* 설명 */}
-      <div>
-        <label className="field-label">설명</label>
-        <textarea
-          className="input-field resize-none"
-          placeholder="클래스 상세 내용을 입력하세요"
-          value={form.description}
-          onChange={(e) => set("description", e.target.value)}
-          rows={5}
-        />
-      </div>
-
-      {error && <p className="error-text">{error}</p>}
-
-        <button type="submit" className="btn-primary" disabled={submitting}>
-          {submitting ? "저장 중..." : classId ? "수정 완료" : "클래스 개설"}
-        </button>
       </form>
 
       {submitModal?.kind === "success" && (

@@ -18,7 +18,7 @@ export default function SearchNavButton({ isLoggedIn }: { isLoggedIn: boolean })
     <button
       type="button"
       onClick={handleClick}
-      className="w-10 h-10 -ml-1 flex items-center justify-center text-gray-500 cursor-pointer"
+      className="w-14 h-14 -mr-2 flex items-center justify-center text-gray-700 cursor-pointer"
       aria-label="검색"
     >
       <svg
@@ -28,7 +28,7 @@ export default function SearchNavButton({ isLoggedIn }: { isLoggedIn: boolean })
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
